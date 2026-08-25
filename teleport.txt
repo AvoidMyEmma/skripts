@@ -1,12 +1,13 @@
 -- LocalScript inside StarterPlayerScripts
 
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
 -- Prevent duplicate UI elements if the script re-executes
 local existingGui = localPlayer:WaitForChild("PlayerGui"):FindFirstChild("PlayerTeleportGui")
 if existingGui then
-    existingGui:Destroy()
+	existingGui:Destroy()
 end
 
 ---------------------------------------------------------
@@ -34,17 +35,31 @@ uiCorner.Parent = mainFrame
 
 -- Title Bar
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0, 40)
-titleLabel.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+titleLabel.Size = UDim2.new(1, -30, 0, 40)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Player Teleporter"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 16
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.Parent = mainFrame
 
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 8)
-titleCorner.Parent = titleLabel
+-- Close Button (X)
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 24, 0, 24)
+closeButton.Position = UDim2.new(1, -29, 0, 8)
+closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 13
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.Parent = mainFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
 
 -- Scrolling Frame for Player List
 local scrollFrame = Instance.new("ScrollingFrame")
@@ -81,76 +96,88 @@ local selectedPlayer = nil
 
 -- Adjust scrolling canvas depth dynamically
 uiListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y)
+	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y)
 end)
 
 -- Refresh list entries
 local function refreshPlayerList()
-    -- Clear current entries
-    for _, child in ipairs(scrollFrame:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
-        end
-    end
+	-- Clear current entries
+	for _, child in ipairs(scrollFrame:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
 
-    -- Populate entries for active players
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= localPlayer then
-            local pButton = Instance.new("TextButton")
-            pButton.Size = UDim2.new(1, -6, 0, 28)
-            pButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-            pButton.Text = player.DisplayName .. " (@" .. player.Name .. ")"
-            pButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-            pButton.TextSize = 13
-            pButton.Font = Enum.Font.SourceSans
-            pButton.Parent = scrollFrame
+	-- Populate entries for active players
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= localPlayer then
+			local pButton = Instance.new("TextButton")
+			pButton.Size = UDim2.new(1, -6, 0, 28)
+			pButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+			pButton.Text = player.DisplayName .. " (@" .. player.Name .. ")"
+			pButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+			pButton.TextSize = 13
+			pButton.Font = Enum.Font.SourceSans
+			pButton.Parent = scrollFrame
 
-            local pCorner = Instance.new("UICorner")
-            pCorner.CornerRadius = UDim.new(0, 4)
-            pCorner.Parent = pButton
+			local pCorner = Instance.new("UICorner")
+			pCorner.CornerRadius = UDim.new(0, 4)
+			pCorner.Parent = pButton
 
-            -- Handle selection state
-            pButton.MouseButton1Click:Connect(function()
-                selectedPlayer = player
-                
-                -- Reset highlight styling on all buttons
-                for _, btn in ipairs(scrollFrame:GetChildren()) do
-                    if btn:IsA("TextButton") then
-                        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-                    end
-                end
-                -- Highlight target selection
-                pButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-            end)
-        end
-    end
+			-- Handle selection state
+			pButton.MouseButton1Click:Connect(function()
+				selectedPlayer = player
+				
+				-- Reset highlight styling on all buttons
+				for _, btn in ipairs(scrollFrame:GetChildren()) do
+					if btn:IsA("TextButton") then
+						btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+					end
+				end
+				-- Highlight target selection
+				pButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+			end)
+		end
+	end
 end
 
 -- Teleport execution routine
 tpButton.MouseButton1Click:Connect(function()
-    if not selectedPlayer then return end
+	if not selectedPlayer then return end
 
-    local myChar = localPlayer.Character
-    local targetChar = selectedPlayer.Character
+	local myChar = localPlayer.Character
+	local targetChar = selectedPlayer.Character
 
-    if myChar and targetChar then
-        local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-        local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+	if myChar and targetChar then
+		local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+		local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
 
-        if myRoot and targetRoot then
-            -- Pivot the local player to 3 units behind the target player
-            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
-        end
-    end
+		if myRoot and targetRoot then
+			-- Pivot the local player to 3 units behind the target player
+			myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+		end
+	end
+end)
+
+-- Close Button Click
+closeButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = false
+end)
+
+-- Toggle Menu visibility using RightControl key
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.KeyCode == Enum.KeyCode.RightControl then
+		mainFrame.Visible = not mainFrame.Visible
+	end
 end)
 
 -- Event connections for automatic dynamic updates
 Players.PlayerAdded:Connect(refreshPlayerList)
 Players.PlayerRemoving:Connect(function(player)
-    if selectedPlayer == player then
-        selectedPlayer = nil
-    end
-    refreshPlayerList()
+	if selectedPlayer == player then
+		selectedPlayer = nil
+	end
+	refreshPlayerList()
 end)
 
 -- Initial run
