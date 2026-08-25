@@ -1,0 +1,46 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Configuration settings for the highlight appearance
+local HIGHLIGHT_COLOR = Color3.fromRGB(255, 0, 0) -- Red fill
+local OUTLINE_COLOR = Color3.fromRGB(255, 255, 255) -- White outline
+local FILL_TRANSPARENCY = 0.5
+local OUTLINE_TRANSPARENCY = 0
+
+local function applyHighlight(character)
+    -- Don't highlight your own character
+    if character == LocalPlayer.Character then return end
+    
+    -- Check if a highlight already exists to prevent duplicates
+    if not character:FindFirstChildOfClass("Highlight") then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "PlayerHighlight"
+        highlight.FillColor = HIGHLIGHT_COLOR
+        highlight.OutlineColor = OUTLINE_COLOR
+        highlight.FillTransparency = FILL_TRANSPARENCY
+        highlight.OutlineTransparency = OUTLINE_TRANSPARENCY
+        highlight.Adornee = character
+        highlight.Parent = character
+    end
+end
+
+-- Handle character spawning for a player
+local function onPlayerAdded(player)
+    if player == LocalPlayer then return end
+    
+    -- Apply highlight if character is already loaded
+    if player.Character then
+        applyHighlight(player.Character)
+    end
+    
+    -- Listen for when the player respawns
+    player.CharacterAdded:Connect(applyHighlight)
+end
+
+-- 1. Apply highlights to existing players in the game
+for _, player in ipairs(Players:GetPlayers()) do
+    onPlayerAdded(player)
+end
+
+-- 2. Apply highlights to players who join later
+Players.PlayerAdded:Connect(onPlayerAdded)
