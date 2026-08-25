@@ -1,0 +1,55 @@
+-- LocalScript inside StarterPlayerScripts or StarterCharacterScripts
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local localPlayer = Players.LocalPlayer
+local camera = Workspace.CurrentCamera
+
+local function getNearestHead()
+	local localCharacter = localPlayer.Character
+	if not localCharacter or not localCharacter:FindFirstChild("HumanoidRootPart") then return nil end
+
+	local localPosition = localCharacter.HumanoidRootPart.Position
+	local nearestHead = nil
+	local shortestDistance = math.huge
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		-- Strictly ignore yourself
+		if player ~= localPlayer and player.Character then
+			local targetHead = player.Character:FindFirstChild("Head")
+			local targetHumanoid = player.Character:FindFirstChildOfClass("Humanoid")
+			
+			if targetHead and targetHumanoid and targetHumanoid.Health > 0 then
+				local distance = (targetHead.Position - localPosition).Magnitude
+				if distance < shortestDistance then
+					shortestDistance = distance
+					nearestHead = targetHead
+				end
+			end
+		end
+	end
+	return nearestHead
+end
+
+-- RenderStepped listener that strips mouse delta influence completely
+RunService.RenderStepped:Connect(function()
+	local character = localPlayer.Character
+	if not character then return end
+	
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then return end
+
+	local targetHead = getNearestHead()
+	if targetHead then
+		-- Hard-override camera focus: force position to remain anchored while pointing directly at target head
+		local currentCamPos = camera.CFrame.Position
+		camera.CameraType = Enum.CameraType.Scriptable
+		camera.CFrame = CFrame.new(currentCamPos, targetHead.Position)
+	else
+		-- Restore default controls when no valid target exists
+		if camera.CameraType ~= Enum.CameraType.Custom then
+			camera.CameraType = Enum.CameraType.Custom
+		end
+	end
+end)
