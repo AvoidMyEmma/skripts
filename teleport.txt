@@ -1,0 +1,157 @@
+-- LocalScript inside StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+-- Prevent duplicate UI elements if the script re-executes
+local existingGui = localPlayer:WaitForChild("PlayerGui"):FindFirstChild("PlayerTeleportGui")
+if existingGui then
+    existingGui:Destroy()
+end
+
+---------------------------------------------------------
+-- UI CREATION (Procedural Layout)
+---------------------------------------------------------
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PlayerTeleportGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+-- Main Container Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 240, 0, 320)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -160)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true -- Allows the developer to drag the UI around
+mainFrame.Parent = screenGui
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 8)
+uiCorner.Parent = mainFrame
+
+-- Title Bar
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 40)
+titleLabel.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+titleLabel.Text = "Player Teleporter"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleLabel
+
+-- Scrolling Frame for Player List
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, -20, 1, -100)
+scrollFrame.Position = UDim2.new(0, 10, 0, 48)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.ScrollBarThickness = 4
+scrollFrame.Parent = mainFrame
+
+local uiListLayout = Instance.new("UIListLayout")
+uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiListLayout.Padding = UDim.new(0, 4)
+uiListLayout.Parent = scrollFrame
+
+-- Teleport Button
+local tpButton = Instance.new("TextButton")
+tpButton.Size = UDim2.new(1, -20, 0, 36)
+tpButton.Position = UDim2.new(0, 10, 1, -44)
+tpButton.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
+tpButton.Text = "Teleport to Player"
+tpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+tpButton.TextSize = 14
+tpButton.Font = Enum.Font.SourceSansBold
+tpButton.Parent = mainFrame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 6)
+btnCorner.Parent = tpButton
+
+---------------------------------------------------------
+-- LOGIC & TELEPORT MECHANICS
+---------------------------------------------------------
+local selectedPlayer = nil
+
+-- Adjust scrolling canvas depth dynamically
+uiListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y)
+end)
+
+-- Refresh list entries
+local function refreshPlayerList()
+    -- Clear current entries
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+
+    -- Populate entries for active players
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= localPlayer then
+            local pButton = Instance.new("TextButton")
+            pButton.Size = UDim2.new(1, -6, 0, 28)
+            pButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+            pButton.Text = player.DisplayName .. " (@" .. player.Name .. ")"
+            pButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+            pButton.TextSize = 13
+            pButton.Font = Enum.Font.SourceSans
+            pButton.Parent = scrollFrame
+
+            local pCorner = Instance.new("UICorner")
+            pCorner.CornerRadius = UDim.new(0, 4)
+            pCorner.Parent = pButton
+
+            -- Handle selection state
+            pButton.MouseButton1Click:Connect(function()
+                selectedPlayer = player
+                
+                -- Reset highlight styling on all buttons
+                for _, btn in ipairs(scrollFrame:GetChildren()) do
+                    if btn:IsA("TextButton") then
+                        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+                    end
+                end
+                -- Highlight target selection
+                pButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+            end)
+        end
+    end
+end
+
+-- Teleport execution routine
+tpButton.MouseButton1Click:Connect(function()
+    if not selectedPlayer then return end
+
+    local myChar = localPlayer.Character
+    local targetChar = selectedPlayer.Character
+
+    if myChar and targetChar then
+        local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+        local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+
+        if myRoot and targetRoot then
+            -- Pivot the local player to 3 units behind the target player
+            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+        end
+    end
+end)
+
+-- Event connections for automatic dynamic updates
+Players.PlayerAdded:Connect(refreshPlayerList)
+Players.PlayerRemoving:Connect(function(player)
+    if selectedPlayer == player then
+        selectedPlayer = nil
+    end
+    refreshPlayerList()
+end)
+
+-- Initial run
+refreshPlayerList()
