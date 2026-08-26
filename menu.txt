@@ -30,7 +30,7 @@ local FILL_TRANSPARENCY = 0.5
 local OUTLINE_TRANSPARENCY = 0
 
 ---------------------------------------------------------
--- UI CREATION
+-- MAIN UI CREATION
 ---------------------------------------------------------
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
@@ -39,8 +39,8 @@ screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 260, 0, 650)
-mainFrame.Position = UDim2.new(0, 20, 0.5, -325)
+mainFrame.Size = UDim2.new(0, 260, 0, 320)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -160)
 mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -77,7 +77,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 6)
 closeCorner.Parent = closeButton
 
-local function createButton(text, pos, bgCol)
+local function createButton(text, pos, bgCol, parent)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(1, -20, 0, 30)
 	btn.Position = pos
@@ -86,7 +86,7 @@ local function createButton(text, pos, bgCol)
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	btn.TextSize = 13
 	btn.Font = Enum.Font.SourceSansBold
-	btn.Parent = mainFrame
+	btn.Parent = parent or mainFrame
 	
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 6)
@@ -99,6 +99,7 @@ local aimbotToggleBtn  = createButton("Aimbot: OFF", UDim2.new(0, 10, 0, 40), Co
 local espToggleBtn     = createButton("ESP Highlights: OFF", UDim2.new(0, 10, 0, 75), Color3.fromRGB(180, 50, 50))
 local flyToggleBtn     = createButton("Fly: OFF", UDim2.new(0, 10, 0, 110), Color3.fromRGB(180, 50, 50))
 local noclipToggleBtn  = createButton("Noclip: OFF", UDim2.new(0, 10, 0, 145), Color3.fromRGB(180, 50, 50))
+local openTpMenuBtn    = createButton("Open Teleport Menu", UDim2.new(0, 10, 0, 275), Color3.fromRGB(0, 162, 255))
 
 ---------------------------------------------------------
 -- HELPER SLIDER CREATOR
@@ -182,36 +183,82 @@ local function applySpeedMultiplier()
 	end
 end
 
--- WalkSpeed Multiplier Slider
 createSlider(180, "Walk Speed: 1.0x", 1, 10, function(val)
 	speedMultiplier = val
 	applySpeedMultiplier()
 	return string.format("Walk Speed: %.1fx", val)
 end)
 
--- FlySpeed Multiplier Slider
 createSlider(228, "Fly Speed: 1.0x", 1, 10, function(val)
 	flySpeedMultiplier = val
 	return string.format("Fly Speed: %.1fx", val)
 end)
 
 ---------------------------------------------------------
--- TELEPORT UI
+-- SEPARATE TELEPORT MENU UI
 ---------------------------------------------------------
+local tpFrame = Instance.new("Frame")
+tpFrame.Name = "TeleportFrame"
+tpFrame.Size = UDim2.new(0, 240, 0, 270)
+tpFrame.Position = UDim2.new(0, 290, 0.5, -135)
+tpFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+tpFrame.BorderSizePixel = 0
+tpFrame.Active = true
+tpFrame.Draggable = true
+tpFrame.Visible = false
+tpFrame.Parent = screenGui
+
+local tpCorner = Instance.new("UICorner")
+tpCorner.CornerRadius = UDim.new(0, 8)
+tpCorner.Parent = tpFrame
+
+local tpTitleLabel = Instance.new("TextLabel")
+tpTitleLabel.Size = UDim2.new(1, -30, 0, 36)
+tpTitleLabel.Position = UDim2.new(0, 10, 0, 0)
+tpTitleLabel.BackgroundTransparency = 1
+tpTitleLabel.Text = "Teleport Menu"
+tpTitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+tpTitleLabel.TextSize = 14
+tpTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+tpTitleLabel.Font = Enum.Font.SourceSansBold
+tpTitleLabel.Parent = tpFrame
+
+local tpCloseBtn = Instance.new("TextButton")
+tpCloseBtn.Size = UDim2.new(0, 24, 0, 24)
+tpCloseBtn.Position = UDim2.new(1, -29, 0, 6)
+tpCloseBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+tpCloseBtn.Text = "X"
+tpCloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+tpCloseBtn.TextSize = 13
+tpCloseBtn.Font = Enum.Font.SourceSansBold
+tpCloseBtn.Parent = tpFrame
+
+local tpCloseCorner = Instance.new("UICorner")
+tpCloseCorner.CornerRadius = UDim.new(0, 6)
+tpCloseCorner.Parent = tpCloseBtn
+
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Size = UDim2.new(1, -20, 0, 140)
-scrollFrame.Position = UDim2.new(0, 10, 0, 280)
+scrollFrame.Position = UDim2.new(0, 10, 0, 40)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.ScrollBarThickness = 4
-scrollFrame.Parent = mainFrame
+scrollFrame.Parent = tpFrame
 
 local uiListLayout = Instance.new("UIListLayout")
 uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 uiListLayout.Padding = UDim.new(0, 4)
 uiListLayout.Parent = scrollFrame
 
-local randomTpBtn = createButton("Teleport to Random Player", UDim2.new(0, 10, 1, -78), Color3.fromRGB(140, 60, 220))
-local tpButton    = createButton("Teleport to Selected Player", UDim2.new(0, 10, 1, -42), Color3.fromRGB(0, 162, 255))
+local randomTpBtn = createButton("Teleport to Random Player", UDim2.new(0, 10, 0, 190), Color3.fromRGB(140, 60, 220), tpFrame)
+local tpButton    = createButton("Teleport to Selected Player", UDim2.new(0, 10, 0, 228), Color3.fromRGB(0, 162, 255), tpFrame)
+
+openTpMenuBtn.MouseButton1Click:Connect(function()
+	tpFrame.Visible = not tpFrame.Visible
+end)
+
+tpCloseBtn.MouseButton1Click:Connect(function()
+	tpFrame.Visible = false
+end)
 
 ---------------------------------------------------------
 -- AIMBOT SYSTEM
@@ -491,11 +538,16 @@ end)
 ---------------------------------------------------------
 closeButton.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
+	tpFrame.Visible = false
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed and input.KeyCode == Enum.KeyCode.RightControl then
-		mainFrame.Visible = not mainFrame.Visible
+		local targetState = not mainFrame.Visible
+		mainFrame.Visible = targetState
+		if not targetState then
+			tpFrame.Visible = false
+		end
 	end
 end)
 
