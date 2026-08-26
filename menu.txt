@@ -94,12 +94,12 @@ local function createButton(text, pos, bgCol, parent)
 	return btn
 end
 
--- Feature Buttons
+-- Feature Buttons inside Main Menu
 local aimbotToggleBtn  = createButton("Aimbot: OFF", UDim2.new(0, 10, 0, 40), Color3.fromRGB(180, 50, 50))
 local espToggleBtn     = createButton("ESP Highlights: OFF", UDim2.new(0, 10, 0, 75), Color3.fromRGB(180, 50, 50))
 local flyToggleBtn     = createButton("Fly: OFF", UDim2.new(0, 10, 0, 110), Color3.fromRGB(180, 50, 50))
 local noclipToggleBtn  = createButton("Noclip: OFF", UDim2.new(0, 10, 0, 145), Color3.fromRGB(180, 50, 50))
-local openTpMenuBtn    = createButton("Open Teleport Menu", UDim2.new(0, 10, 0, 275), Color3.fromRGB(0, 162, 255))
+local toggleTpMenuBtn  = createButton("TP Menu: OFF", UDim2.new(0, 10, 0, 275), Color3.fromRGB(180, 50, 50))
 
 ---------------------------------------------------------
 -- HELPER SLIDER CREATOR
@@ -252,12 +252,23 @@ uiListLayout.Parent = scrollFrame
 local randomTpBtn = createButton("Teleport to Random Player", UDim2.new(0, 10, 0, 190), Color3.fromRGB(140, 60, 220), tpFrame)
 local tpButton    = createButton("Teleport to Selected Player", UDim2.new(0, 10, 0, 228), Color3.fromRGB(0, 162, 255), tpFrame)
 
-openTpMenuBtn.MouseButton1Click:Connect(function()
-	tpFrame.Visible = not tpFrame.Visible
+local function updateTpMenuToggleState(visible)
+	tpFrame.Visible = visible
+	if visible then
+		toggleTpMenuBtn.Text = "TP Menu: ON"
+		toggleTpMenuBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 60)
+	else
+		toggleTpMenuBtn.Text = "TP Menu: OFF"
+		toggleTpMenuBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+	end
+end
+
+toggleTpMenuBtn.MouseButton1Click:Connect(function()
+	updateTpMenuToggleState(not tpFrame.Visible)
 end)
 
 tpCloseBtn.MouseButton1Click:Connect(function()
-	tpFrame.Visible = false
+	updateTpMenuToggleState(false)
 end)
 
 ---------------------------------------------------------
@@ -538,7 +549,7 @@ end)
 ---------------------------------------------------------
 closeButton.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
-	tpFrame.Visible = false
+	updateTpMenuToggleState(false)
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -546,7 +557,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		local targetState = not mainFrame.Visible
 		mainFrame.Visible = targetState
 		if not targetState then
-			tpFrame.Visible = false
+			updateTpMenuToggleState(false)
 		end
 	end
 end)
