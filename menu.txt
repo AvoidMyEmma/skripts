@@ -20,12 +20,14 @@ local aimbotEnabled = false
 local espEnabled = false
 local flyEnabled = false
 local noclipEnabled = false
-local speedMultiplier = 1 -- 1x multiplier (default)
+local speedMultiplier = 1
+local flySpeedMultiplier = 1
+local BASE_FLY_SPEED = 50
 
-local HIGHLIGHT_COLOR = Color3.fromRGB(255, 0, 0)[cite: 1]
-local OUTLINE_COLOR = Color3.fromRGB(255, 255, 255)[cite: 1]
-local FILL_TRANSPARENCY = 0.5[cite: 1]
-local OUTLINE_TRANSPARENCY = 0[cite: 1]
+local HIGHLIGHT_COLOR = Color3.fromRGB(255, 0, 0)
+local OUTLINE_COLOR = Color3.fromRGB(255, 255, 255)
+local FILL_TRANSPARENCY = 0.5
+local OUTLINE_TRANSPARENCY = 0
 
 ---------------------------------------------------------
 -- UI CREATION
@@ -33,47 +35,47 @@ local OUTLINE_TRANSPARENCY = 0[cite: 1]
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
 screenGui.ResetOnSpawn = false
-screenGui.Parent = localPlayer:WaitForChild("PlayerGui")[cite: 1]
+screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 260, 0, 560)
-mainFrame.Position = UDim2.new(0, 20, 0.5, -280)
-mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)[cite: 1]
-mainFrame.BorderSizePixel = 0[cite: 1]
-mainFrame.Active = true[cite: 1]
-mainFrame.Draggable = true[cite: 1]
-mainFrame.Parent = screenGui[cite: 1]
+mainFrame.Size = UDim2.new(0, 260, 0, 650)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -325)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
 
 local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 8)[cite: 1]
-uiCorner.Parent = mainFrame[cite: 1]
+uiCorner.CornerRadius = UDim.new(0, 8)
+uiCorner.Parent = mainFrame
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -30, 0, 36)
-titleLabel.Position = UDim2.new(0, 10, 0, 0)[cite: 1]
-titleLabel.BackgroundTransparency = 1[cite: 1]
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Mod Menu (RightCtrl)"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)[cite: 1]
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 14
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left[cite: 1]
-titleLabel.Font = Enum.Font.SourceSansBold[cite: 1]
-titleLabel.Parent = mainFrame[cite: 1]
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Parent = mainFrame
 
 local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"[cite: 1]
-closeButton.Size = UDim2.new(0, 24, 0, 24)[cite: 1]
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 24, 0, 24)
 closeButton.Position = UDim2.new(1, -29, 0, 6)
-closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)[cite: 1]
-closeButton.Text = "X"[cite: 1]
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)[cite: 1]
-closeButton.TextSize = 13[cite: 1]
-closeButton.Font = Enum.Font.SourceSansBold[cite: 1]
-closeButton.Parent = mainFrame[cite: 1]
+closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 13
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.Parent = mainFrame
 
 local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 6)[cite: 1]
-closeCorner.Parent = closeButton[cite: 1]
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
 
 local function createButton(text, pos, bgCol)
 	local btn = Instance.new("TextButton")
@@ -81,167 +83,181 @@ local function createButton(text, pos, bgCol)
 	btn.Position = pos
 	btn.BackgroundColor3 = bgCol
 	btn.Text = text
-	btn.TextColor3 = Color3.fromRGB(255, 255, 255)[cite: 1]
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	btn.TextSize = 13
-	btn.Font = Enum.Font.SourceSansBold[cite: 1]
+	btn.Font = Enum.Font.SourceSansBold
 	btn.Parent = mainFrame
 	
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 6)[cite: 1]
+	corner.CornerRadius = UDim.new(0, 6)
 	corner.Parent = btn
 	return btn
 end
 
--- Toggle Buttons
-local aimbotToggleBtn = createButton("Aimbot: OFF", UDim2.new(0, 10, 0, 40), Color3.fromRGB(180, 50, 50))
-local espToggleBtn    = createButton("ESP Highlights: OFF", UDim2.new(0, 10, 0, 75), Color3.fromRGB(180, 50, 50))
-local flyToggleBtn    = createButton("Fly: OFF", UDim2.new(0, 10, 0, 110), Color3.fromRGB(180, 50, 50))
-local noclipToggleBtn = createButton("Noclip: OFF", UDim2.new(0, 10, 0, 145), Color3.fromRGB(180, 50, 50))
+-- Feature Buttons
+local aimbotToggleBtn  = createButton("Aimbot: OFF", UDim2.new(0, 10, 0, 40), Color3.fromRGB(180, 50, 50))
+local espToggleBtn     = createButton("ESP Highlights: OFF", UDim2.new(0, 10, 0, 75), Color3.fromRGB(180, 50, 50))
+local flyToggleBtn     = createButton("Fly: OFF", UDim2.new(0, 10, 0, 110), Color3.fromRGB(180, 50, 50))
+local noclipToggleBtn  = createButton("Noclip: OFF", UDim2.new(0, 10, 0, 145), Color3.fromRGB(180, 50, 50))
 
 ---------------------------------------------------------
--- SPEED MULTIPLIER SLIDER UI
+-- HELPER SLIDER CREATOR
 ---------------------------------------------------------
-local sliderFrame = Instance.new("Frame")
-sliderFrame.Size = UDim2.new(1, -20, 0, 45)
-sliderFrame.Position = UDim2.new(0, 10, 0, 180)
-sliderFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-sliderFrame.Parent = mainFrame
+local function createSlider(yPos, defaultText, minVal, maxVal, onUpdate)
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -20, 0, 42)
+	frame.Position = UDim2.new(0, 10, 0, yPos)
+	frame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+	frame.Parent = mainFrame
 
-local sliderCorner = Instance.new("UICorner")
-sliderCorner.CornerRadius = UDim.new(0, 6)[cite: 1]
-sliderCorner.Parent = sliderFrame
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = frame
 
-local sliderLabel = Instance.new("TextLabel")
-sliderLabel.Size = UDim2.new(1, -10, 0, 20)
-sliderLabel.Position = UDim2.new(0, 5, 0, 2)
-sliderLabel.BackgroundTransparency = 1[cite: 1]
-sliderLabel.Text = "Speed Multiplier: 1.0x"
-sliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)[cite: 1]
-sliderLabel.TextSize = 12
-sliderLabel.Font = Enum.Font.SourceSansBold[cite: 1]
-sliderLabel.Parent = sliderFrame
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -10, 0, 18)
+	label.Position = UDim2.new(0, 5, 0, 2)
+	label.BackgroundTransparency = 1
+	label.Text = defaultText
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextSize = 12
+	label.Font = Enum.Font.SourceSansBold
+	label.Parent = frame
 
-local sliderBar = Instance.new("Frame")
-sliderBar.Size = UDim2.new(1, -20, 0, 8)
-sliderBar.Position = UDim2.new(0, 10, 0, 26)
-sliderBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-sliderBar.Parent = sliderFrame
+	local bar = Instance.new("Frame")
+	bar.Size = UDim2.new(1, -20, 0, 8)
+	bar.Position = UDim2.new(0, 10, 0, 24)
+	bar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+	bar.Parent = frame
 
-local sliderFill = Instance.new("Frame")
-sliderFill.Size = UDim2.new(0, 0, 1, 0)
-sliderFill.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
-sliderFill.BorderSizePixel = 0
-sliderFill.Parent = sliderBar
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.new(0, 0, 1, 0)
+	fill.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
+	fill.BorderSizePixel = 0
+	fill.Parent = bar
 
-local sliderDragging = false
-local MIN_MULT, MAX_MULT = 1, 10 -- 1x to 10x Speed
+	local dragging = false
 
+	local function update(input)
+		local barPos = bar.AbsolutePosition.X
+		local barSize = bar.AbsoluteSize.X
+		local mousePos = input.Position.X
+		local percentage = math.clamp((mousePos - barPos) / barSize, 0, 1)
+
+		fill.Size = UDim2.new(percentage, 0, 1, 0)
+		local val = math.floor((minVal + (percentage * (maxVal - minVal))) * 10) / 10
+		label.Text = onUpdate(val)
+	end
+
+	bar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			update(input)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			update(input)
+		end
+	end)
+end
+
+---------------------------------------------------------
+-- WALK & FLY SPEED SLIDERS
+---------------------------------------------------------
 local function applySpeedMultiplier()
 	if localPlayer.Character then
-		local humanoid = localPlayer.Character:FindFirstChildOfClass("Humanoid")[cite: 1]
+		local humanoid = localPlayer.Character:FindFirstChildOfClass("Humanoid")
 		if humanoid then
-			-- Calculate base speed (default 16 or current base) and multiply
 			local baseSpeed = humanoid:GetAttribute("BaseWalkSpeed") or 16
 			humanoid.WalkSpeed = baseSpeed * speedMultiplier
 		end
 	end
 end
 
-local function updateSlider(input)
-	local barPos = sliderBar.AbsolutePosition.X
-	local barSize = sliderBar.AbsoluteSize.X
-	local mousePos = input.Position.X
-	local percentage = math.clamp((mousePos - barPos) / barSize, 0, 1)
-
-	sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-	-- Format to 1 decimal place (e.g., 2.5x)
-	speedMultiplier = math.floor((MIN_MULT + (percentage * (MAX_MULT - MIN_MULT))) * 10) / 10
-	sliderLabel.Text = "Speed Multiplier: " .. string.format("%.1fx", speedMultiplier)
-
+-- WalkSpeed Multiplier Slider
+createSlider(180, "Walk Speed: 1.0x", 1, 10, function(val)
+	speedMultiplier = val
 	applySpeedMultiplier()
-end
-
-sliderBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		sliderDragging = true
-		updateSlider(input)
-	end
+	return string.format("Walk Speed: %.1fx", val)
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		sliderDragging = false
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if sliderDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-		updateSlider(input)
-	end
+-- FlySpeed Multiplier Slider
+createSlider(228, "Fly Speed: 1.0x", 1, 10, function(val)
+	flySpeedMultiplier = val
+	return string.format("Fly Speed: %.1fx", val)
 end)
 
 ---------------------------------------------------------
 -- TELEPORT UI
 ---------------------------------------------------------
-local scrollFrame = Instance.new("ScrollingFrame")[cite: 1]
-scrollFrame.Size = UDim2.new(1, -20, 0, 150)
-scrollFrame.Position = UDim2.new(0, 10, 0, 235)
-scrollFrame.BackgroundTransparency = 1[cite: 1]
-scrollFrame.ScrollBarThickness = 4[cite: 1]
-scrollFrame.Parent = mainFrame[cite: 1]
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, -20, 0, 140)
+scrollFrame.Position = UDim2.new(0, 10, 0, 280)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.ScrollBarThickness = 4
+scrollFrame.Parent = mainFrame
 
-local uiListLayout = Instance.new("UIListLayout")[cite: 1]
-uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder[cite: 1]
-uiListLayout.Padding = UDim.new(0, 4)[cite: 1]
-uiListLayout.Parent = scrollFrame[cite: 1]
+local uiListLayout = Instance.new("UIListLayout")
+uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiListLayout.Padding = UDim.new(0, 4)
+uiListLayout.Parent = scrollFrame
 
-local tpButton = createButton("Teleport to Selected Player", UDim2.new(0, 10, 1, -44), Color3.fromRGB(0, 162, 255))[cite: 1]
+local randomTpBtn = createButton("Teleport to Random Player", UDim2.new(0, 10, 1, -78), Color3.fromRGB(140, 60, 220))
+local tpButton    = createButton("Teleport to Selected Player", UDim2.new(0, 10, 1, -42), Color3.fromRGB(0, 162, 255))
 
 ---------------------------------------------------------
 -- AIMBOT SYSTEM
 ---------------------------------------------------------
 local function getNearestHead()
-	local localCharacter = localPlayer.Character[cite: 1]
-	if not localCharacter or not localCharacter:FindFirstChild("HumanoidRootPart") then return nil end[cite: 1]
+	local localCharacter = localPlayer.Character
+	if not localCharacter or not localCharacter:FindFirstChild("HumanoidRootPart") then return nil end
 
-	local localPosition = localCharacter.HumanoidRootPart.Position[cite: 1]
-	local nearestHead = nil[cite: 1]
-	local shortestDistance = math.huge[cite: 1]
+	local localPosition = localCharacter.HumanoidRootPart.Position
+	local nearestHead = nil
+	local shortestDistance = math.huge
 
-	for _, player in ipairs(Players:GetPlayers()) do[cite: 1]
-		if player ~= localPlayer and player.Character then[cite: 1]
-			local targetHead = player.Character:FindFirstChild("Head")[cite: 1]
-			local targetHumanoid = player.Character:FindFirstChildOfClass("Humanoid")[cite: 1]
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= localPlayer and player.Character then
+			local targetHead = player.Character:FindFirstChild("Head")
+			local targetHumanoid = player.Character:FindFirstChildOfClass("Humanoid")
 			
-			if targetHead and targetHumanoid and targetHumanoid.Health > 0 then[cite: 1]
-				local distance = (targetHead.Position - localPosition).Magnitude[cite: 1]
-				if distance < shortestDistance then[cite: 1]
-					shortestDistance = distance[cite: 1]
-					nearestHead = targetHead[cite: 1]
+			if targetHead and targetHumanoid and targetHumanoid.Health > 0 then
+				local distance = (targetHead.Position - localPosition).Magnitude
+				if distance < shortestDistance then
+					shortestDistance = distance
+					nearestHead = targetHead
 				end
 			end
 		end
 	end
-	return nearestHead[cite: 1]
+	return nearestHead
 end
 
 RunService.RenderStepped:Connect(function()
 	if not aimbotEnabled then return end
 
-	local character = localPlayer.Character[cite: 1]
-	if not character then return end[cite: 1]
+	local character = localPlayer.Character
+	if not character then return end
 	
-	local humanoid = character:FindFirstChildOfClass("Humanoid")[cite: 1]
-	if not humanoid or humanoid.Health <= 0 then return end[cite: 1]
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then return end
 
-	local targetHead = getNearestHead()[cite: 1]
-	if targetHead then[cite: 1]
-		local currentCamPos = camera.CFrame.Position[cite: 1]
-		camera.CameraType = Enum.CameraType.Scriptable[cite: 1]
-		camera.CFrame = CFrame.new(currentCamPos, targetHead.Position)[cite: 1]
+	local targetHead = getNearestHead()
+	if targetHead then
+		local currentCamPos = camera.CFrame.Position
+		camera.CameraType = Enum.CameraType.Scriptable
+		camera.CFrame = CFrame.new(currentCamPos, targetHead.Position)
 	else
-		if camera.CameraType ~= Enum.CameraType.Custom then[cite: 1]
-			camera.CameraType = Enum.CameraType.Custom[cite: 1]
+		if camera.CameraType ~= Enum.CameraType.Custom then
+			camera.CameraType = Enum.CameraType.Custom
 		end
 	end
 end)
@@ -254,7 +270,7 @@ aimbotToggleBtn.MouseButton1Click:Connect(function()
 	else
 		aimbotToggleBtn.Text = "Aimbot: OFF"
 		aimbotToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-		camera.CameraType = Enum.CameraType.Custom[cite: 1]
+		camera.CameraType = Enum.CameraType.Custom
 	end
 end)
 
@@ -262,43 +278,43 @@ end)
 -- ESP HIGHLIGHT SYSTEM
 ---------------------------------------------------------
 local function applyHighlight(character)
-	if character == localPlayer.Character then return end[cite: 1]
+	if character == localPlayer.Character then return end
 	
-	local existingHighlight = character:FindFirstChild("PlayerHighlight")[cite: 1]
+	local existingHighlight = character:FindFirstChild("PlayerHighlight")
 	if espEnabled then
-		if not existingHighlight then[cite: 1]
-			local highlight = Instance.new("Highlight")[cite: 1]
-			highlight.Name = "PlayerHighlight"[cite: 1]
-			highlight.FillColor = HIGHLIGHT_COLOR[cite: 1]
-			highlight.OutlineColor = OUTLINE_COLOR[cite: 1]
-			highlight.FillTransparency = FILL_TRANSPARENCY[cite: 1]
-			highlight.OutlineTransparency = OUTLINE_TRANSPARENCY[cite: 1]
-			highlight.Adornee = character[cite: 1]
-			highlight.Parent = character[cite: 1]
+		if not existingHighlight then
+			local highlight = Instance.new("Highlight")
+			highlight.Name = "PlayerHighlight"
+			highlight.FillColor = HIGHLIGHT_COLOR
+			highlight.OutlineColor = OUTLINE_COLOR
+			highlight.FillTransparency = FILL_TRANSPARENCY
+			highlight.OutlineTransparency = OUTLINE_TRANSPARENCY
+			highlight.Adornee = character
+			highlight.Parent = character
 		end
 	else
 		if existingHighlight then
-			existingHighlight:Destroy()[cite: 1]
+			existingHighlight:Destroy()
 		end
 	end
 end
 
 local function updateAllHighlights()
-	for _, player in ipairs(Players:GetPlayers()) do[cite: 1]
-		if player.Character then[cite: 1]
-			applyHighlight(player.Character)[cite: 1]
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.Character then
+			applyHighlight(player.Character)
 		end
 	end
 end
 
 local function onPlayerAdded(player)
-	if player == localPlayer then return end[cite: 1]
-	if player.Character then applyHighlight(player.Character) end[cite: 1]
-	player.CharacterAdded:Connect(applyHighlight)[cite: 1]
+	if player == localPlayer then return end
+	if player.Character then applyHighlight(player.Character) end
+	player.CharacterAdded:Connect(applyHighlight)
 end
 
-for _, player in ipairs(Players:GetPlayers()) do onPlayerAdded(player) end[cite: 1]
-Players.PlayerAdded:Connect(onPlayerAdded)[cite: 1]
+for _, player in ipairs(Players:GetPlayers()) do onPlayerAdded(player) end
+Players.PlayerAdded:Connect(onPlayerAdded)
 
 espToggleBtn.MouseButton1Click:Connect(function()
 	espEnabled = not espEnabled
@@ -317,7 +333,6 @@ end)
 ---------------------------------------------------------
 local bodyVelocity = nil
 local bodyGyro = nil
-local FLY_SPEED = 50
 
 flyToggleBtn.MouseButton1Click:Connect(function()
 	flyEnabled = not flyEnabled
@@ -356,7 +371,8 @@ RunService.RenderStepped:Connect(function()
 		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
 		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
-		bodyVelocity.Velocity = moveDir.Magnitude > 0 and moveDir.Unit * (FLY_SPEED * speedMultiplier) or Vector3.zero
+		local currentFlySpeed = BASE_FLY_SPEED * flySpeedMultiplier
+		bodyVelocity.Velocity = moveDir.Magnitude > 0 and moveDir.Unit * currentFlySpeed or Vector3.zero
 		bodyGyro.CFrame = camera.CFrame
 	end
 end)
@@ -388,57 +404,84 @@ end)
 ---------------------------------------------------------
 -- TELEPORT SYSTEM
 ---------------------------------------------------------
-local selectedPlayer = nil[cite: 1]
+local selectedPlayer = nil
 
 uiListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y)[cite: 1]
+	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y)
 end)
 
 local function refreshPlayerList()
-	for _, child in ipairs(scrollFrame:GetChildren()) do[cite: 1]
-		if child:IsA("TextButton") then child:Destroy() end[cite: 1]
+	for _, child in ipairs(scrollFrame:GetChildren()) do
+		if child:IsA("TextButton") then child:Destroy() end
 	end
 
-	for _, player in ipairs(Players:GetPlayers()) do[cite: 1]
-		if player ~= localPlayer then[cite: 1]
-			local pButton = Instance.new("TextButton")[cite: 1]
-			pButton.Size = UDim2.new(1, -6, 0, 28)[cite: 1]
-			pButton.BackgroundColor3 = (selectedPlayer == player) and Color3.fromRGB(0, 120, 215) or Color3.fromRGB(50, 50, 60)[cite: 1]
-			pButton.Text = player.DisplayName .. " (@" .. player.Name .. ")"[cite: 1]
-			pButton.TextColor3 = Color3.fromRGB(200, 200, 200)[cite: 1]
-			pButton.TextSize = 13[cite: 1]
-			pButton.Font = Enum.Font.SourceSans[cite: 1]
-			pButton.Parent = scrollFrame[cite: 1]
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= localPlayer then
+			local pButton = Instance.new("TextButton")
+			pButton.Size = UDim2.new(1, -6, 0, 28)
+			pButton.BackgroundColor3 = (selectedPlayer == player) and Color3.fromRGB(0, 120, 215) or Color3.fromRGB(50, 50, 60)
+			pButton.Text = player.DisplayName .. " (@" .. player.Name .. ")"
+			pButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+			pButton.TextSize = 13
+			pButton.Font = Enum.Font.SourceSans
+			pButton.Parent = scrollFrame
 
-			local pCorner = Instance.new("UICorner")[cite: 1]
-			pCorner.CornerRadius = UDim.new(0, 4)[cite: 1]
-			pCorner.Parent = pButton[cite: 1]
+			local pCorner = Instance.new("UICorner")
+			pCorner.CornerRadius = UDim.new(0, 4)
+			pCorner.Parent = pButton
 
 			pButton.MouseButton1Click:Connect(function()
-				selectedPlayer = player[cite: 1]
-				for _, btn in ipairs(scrollFrame:GetChildren()) do[cite: 1]
+				selectedPlayer = player
+				for _, btn in ipairs(scrollFrame:GetChildren()) do
 					if btn:IsA("TextButton") then
-						btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)[cite: 1]
+						btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 					end
 				end
-				pButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)[cite: 1]
+				pButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
 			end)
 		end
 	end
 end
 
+-- Teleport to Selected
 tpButton.MouseButton1Click:Connect(function()
-	if not selectedPlayer then return end[cite: 1]
+	if not selectedPlayer then return end
 
-	local myChar = localPlayer.Character[cite: 1]
-	local targetChar = selectedPlayer.Character[cite: 1]
+	local myChar = localPlayer.Character
+	local targetChar = selectedPlayer.Character
 
-	if myChar and targetChar then[cite: 1]
-		local myRoot = myChar:FindFirstChild("HumanoidRootPart")[cite: 1]
-		local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")[cite: 1]
+	if myChar and targetChar then
+		local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+		local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
 
-		if myRoot and targetRoot then[cite: 1]
-			myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)[cite: 1]
+		if myRoot and targetRoot then
+			myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+		end
+	end
+end)
+
+-- Teleport to Random Player
+randomTpBtn.MouseButton1Click:Connect(function()
+	local validTargets = {}
+	
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			table.insert(validTargets, player)
+		end
+	end
+
+	if #validTargets > 0 then
+		local randomPlayer = validTargets[math.random(1, #validTargets)]
+		local myChar = localPlayer.Character
+		local targetChar = randomPlayer.Character
+
+		if myChar and targetChar then
+			local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+			local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+
+			if myRoot and targetRoot then
+				myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+			end
 		end
 	end
 end)
@@ -447,18 +490,17 @@ end)
 -- UI TOGGLE & CHARACTER HANDLERS
 ---------------------------------------------------------
 closeButton.MouseButton1Click:Connect(function()
-	mainFrame.Visible = false[cite: 1]
+	mainFrame.Visible = false
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and input.KeyCode == Enum.KeyCode.RightControl then[cite: 1]
-		mainFrame.Visible = not mainFrame.Visible[cite: 1]
+	if not gameProcessed and input.KeyCode == Enum.KeyCode.RightControl then
+		mainFrame.Visible = not mainFrame.Visible
 	end
 end)
 
 local function onCharacterAdded(char)
 	local humanoid = char:WaitForChild("Humanoid")
-	-- Store original base speed if not set
 	if not humanoid:GetAttribute("BaseWalkSpeed") then
 		humanoid:SetAttribute("BaseWalkSpeed", humanoid.WalkSpeed)
 	end
@@ -471,10 +513,10 @@ end
 
 localPlayer.CharacterAdded:Connect(onCharacterAdded)
 
-Players.PlayerAdded:Connect(refreshPlayerList)[cite: 1]
+Players.PlayerAdded:Connect(refreshPlayerList)
 Players.PlayerRemoving:Connect(function(player)
-	if selectedPlayer == player then selectedPlayer = nil end[cite: 1]
-	refreshPlayerList()[cite: 1]
+	if selectedPlayer == player then selectedPlayer = nil end
+	refreshPlayerList()
 end)
 
-refreshPlayerList()[cite: 1]
+refreshPlayerList()
