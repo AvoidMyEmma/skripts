@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local VirtualInputManager = game:GetService("VirtualInputManager")
+local TweenService = game:GetService("TweenService")
 
 local localPlayer = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
@@ -31,13 +32,73 @@ local FILL_TRANSPARENCY = 0.5
 local OUTLINE_TRANSPARENCY = 0
 
 ---------------------------------------------------------
--- MAIN UI CREATION
+-- MAIN UI CONTAINER
 ---------------------------------------------------------
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ModMenuGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 
+---------------------------------------------------------
+-- INTRO / LOADING SCREEN ("ModMenu by Emma")
+---------------------------------------------------------
+local loadingFrame = Instance.new("Frame")
+loadingFrame.Name = "LoadingFrame"
+loadingFrame.Size = UDim2.new(0, 320, 0, 150)
+loadingFrame.Position = UDim2.new(0.5, -160, 0.5, -75)
+loadingFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+loadingFrame.BorderSizePixel = 0
+loadingFrame.Active = true
+loadingFrame.Parent = screenGui
+
+local loadingCorner = Instance.new("UICorner")
+loadingCorner.CornerRadius = UDim.new(0, 10)
+loadingCorner.Parent = loadingFrame
+
+local loadingTitle = Instance.new("TextLabel")
+loadingTitle.Size = UDim2.new(1, 0, 0, 40)
+loadingTitle.Position = UDim2.new(0, 0, 0, 15)
+loadingTitle.BackgroundTransparency = 1
+loadingTitle.Text = "ModMenu by Emma"
+loadingTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadingTitle.TextSize = 20
+loadingTitle.Font = Enum.Font.SourceSansBold
+loadingTitle.Parent = loadingFrame
+
+local loadingStatus = Instance.new("TextLabel")
+loadingStatus.Size = UDim2.new(1, 0, 0, 20)
+loadingStatus.Position = UDim2.new(0, 0, 0, 55)
+loadingStatus.BackgroundTransparency = 1
+loadingStatus.Text = "Initializing features..."
+loadingStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
+loadingStatus.TextSize = 13
+loadingStatus.Font = Enum.Font.SourceSans
+loadingStatus.Parent = loadingFrame
+
+local barBackground = Instance.new("Frame")
+barBackground.Size = UDim2.new(1, -40, 0, 10)
+barBackground.Position = UDim2.new(0, 20, 0, 95)
+barBackground.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+barBackground.BorderSizePixel = 0
+barBackground.Parent = loadingFrame
+
+local barCorner = Instance.new("UICorner")
+barCorner.CornerRadius = UDim.new(0, 5)
+barCorner.Parent = barBackground
+
+local barFill = Instance.new("Frame")
+barFill.Size = UDim2.new(0, 0, 1, 0)
+barFill.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
+barFill.BorderSizePixel = 0
+barFill.Parent = barBackground
+
+local fillCorner = Instance.new("UICorner")
+fillCorner.CornerRadius = UDim.new(0, 5)
+fillCorner.Parent = barFill
+
+---------------------------------------------------------
+-- MAIN MENU FRAME (HIDDEN INITIALLY)
+---------------------------------------------------------
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 260, 0, 360)
@@ -46,6 +107,7 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
+mainFrame.Visible = false
 mainFrame.Parent = screenGui
 
 local uiCorner = Instance.new("UICorner")
@@ -1091,3 +1153,33 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 refreshPlayerList()
+
+---------------------------------------------------------
+-- LOADING ANIMATION SEQUENCE
+---------------------------------------------------------
+task.spawn(function()
+	-- Animate Loading Progress Bar
+	local tweenInfo = TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local progressTween = TweenService:Create(barFill, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
+	progressTween:Play()
+
+	task.wait(0.6)
+	loadingStatus.Text = "Loading modules..."
+	task.wait(0.6)
+	loadingStatus.Text = "Ready!"
+	task.wait(0.6)
+
+	-- Fade Out Loading UI
+	local fadeInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local fadeOut = TweenService:Create(loadingFrame, fadeInfo, {BackgroundTransparency = 1})
+	TweenService:Create(loadingTitle, fadeInfo, {TextTransparency = 1}):Play()
+	TweenService:Create(loadingStatus, fadeInfo, {TextTransparency = 1}):Play()
+	TweenService:Create(barBackground, fadeInfo, {BackgroundTransparency = 1}):Play()
+	TweenService:Create(barFill, fadeInfo, {BackgroundTransparency = 1}):Play()
+	fadeOut:Play()
+	
+	fadeOut.Completed:Connect(function()
+		loadingFrame:Destroy()
+		mainFrame.Visible = true
+	end)
+end)	
