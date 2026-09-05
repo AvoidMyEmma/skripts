@@ -3,7 +3,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
-local HttpService = game:GetService("HttpService")
 
 local localPlayer = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
@@ -20,9 +19,6 @@ local ghostCharacter = nil
 local freecamSpeed = 50
 local freecamSens = 0.003
 local currentAngles = Vector2.new(0, 0)
-
--- GitHub Script URL for Version Verification
-local SCRIPT_URL = "https://raw.githubusercontent.com/AvoidMyEmma/skripts/main/mm2.txt"
 
 -- UI Setup (ScreenGui, Main Frame, Buttons, etc.)
 local screenGui = Instance.new("ScreenGui")
@@ -49,7 +45,7 @@ corner1.Parent = toggleMenuBtn
 -- The Menu Frame (specFrame)
 local specFrame = Instance.new("Frame")
 specFrame.Name = "SpecFrame"
-specFrame.Size = UDim2.new(0, 220, 0, 275)
+specFrame.Size = UDim2.new(0, 220, 0, 230)
 specFrame.Position = UDim2.new(0, 20, 0, 70)
 specFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 specFrame.BorderSizePixel = 0
@@ -100,25 +96,10 @@ local corner4 = Instance.new("UICorner")
 corner4.CornerRadius = UDim.new(0, 6)
 corner4.Parent = warnBtn
 
--- Check Updates Button inside Menu
-local updateCheckBtn = Instance.new("TextButton")
-updateCheckBtn.Size = UDim2.new(0, 180, 0, 30)
-updateCheckBtn.Position = UDim2.new(0, 20, 0, 135)
-updateCheckBtn.BackgroundColor3 = Color3.fromRGB(40, 90, 140)
-updateCheckBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-updateCheckBtn.Text = "Check Code Match"
-updateCheckBtn.TextSize = 12
-updateCheckBtn.Font = Enum.Font.GothamBold
-updateCheckBtn.Parent = specFrame
-
-local corner5 = Instance.new("UICorner")
-corner5.CornerRadius = UDim.new(0, 6)
-corner5.Parent = updateCheckBtn
-
 -- Status / Log Label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -40, 0, 75)
-statusLabel.Position = UDim2.new(0, 20, 0, 175)
+statusLabel.Position = UDim2.new(0, 20, 0, 135)
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 statusLabel.Text = "Status: Idle\nClick player to spectate."
@@ -254,28 +235,6 @@ local function disableFreecam()
     logMessage("Freecam disabled", "Info")
 end
 
--- Code Match Check Function
-local function checkCodeMatch()
-    logMessage("Checking code version...", "Info")
-    
-    task.spawn(function()
-        local success, remoteCode = pcall(function()
-            return game:HttpGet(SCRIPT_URL)
-        end)
-
-        if success and remoteCode then
-            -- Read the current script source if running from an environment that supports it, 
-            -- or compare against a signature/hash. Since standard LocalScripts can't easily read 
-            -- their own source file directly via standard API without getscriptbytecode, 
-            -- we can compare text length or contents if bundled, or fetch and compare.
-            -- Alternatively, if you want to compare live running behavior or check if remote differs:
-            logMessage("Fetched remote code successfully.", "Info")
-        else
-            logMessage("Failed to fetch remote script.", "Error")
-        end
-    end)
-end
-
 -- UI Interactivity Connections
 toggleMenuBtn.MouseButton1Click:Connect(function()
     specFrame.Visible = not specFrame.Visible
@@ -296,10 +255,6 @@ warnBtn.MouseButton1Click:Connect(function()
     else
         logMessage("No player currently spectated!", "Error")
     end
-end)
-
-updateCheckBtn.MouseButton1Click:Connect(function()
-    checkCodeMatch()
 end)
 
 -- Input Listeners
@@ -326,4 +281,3 @@ UserInputService.InputEnded:Connect(function(input)
         isRightMouseDown = false
     end
 end)
-# test #
