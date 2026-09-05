@@ -1,4 +1,5 @@
 -- LocalScript placed inside StarterPlayerScripts or executed via exploit
+-- Nexo Hub Pro - Streamlined with Core Utilities
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -26,11 +27,15 @@ local CONFIG = {
     LOOK_SENSITIVITY = 0.25,
     TOGGLE_KEY = Enum.KeyCode.LeftAlt,
     
-    -- Configurable Distances
+    -- Configurable Distances & Stats
     MURDER_KA_DISTANCE = 10,
     SHERIFF_KA_DISTANCE = 10,
     ANTI_MURDER_DISTANCE = 20,
     ANTI_MURDER_SKY_HEIGHT = 100,
+    
+    -- GUI Transparency Settings (0 = Opaque, 1 = Fully Transparent)
+    GUI_TRANSPARENCY = 0.1,
+    ELEMENT_TRANSPARENCY = 0.1,
 }
 
 local ACTION_FREEZE = "FreecamFreezeMovement"
@@ -66,11 +71,11 @@ local isRightMouseDown = false
 ---------------------------------------------------------
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
-local existingGui = playerGui:FindFirstChild("MergedControlGui")
+local existingGui = playerGui:FindFirstChild("NexoHubGui")
 if existingGui then existingGui:Destroy() end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "MergedControlGui"
+screenGui.Name = "NexoHubGui"
 screenGui.ResetOnSpawn = false
 screenGui.Enabled = true
 screenGui.DisplayOrder = 100
@@ -80,9 +85,10 @@ screenGui.Parent = playerGui
 -- 1. Main Container Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 220, 0, 260)
-mainFrame.Position = UDim2.new(0.02, 0, 0.3, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Size = UDim2.new(0, 220, 0, 255)
+mainFrame.Position = UDim2.new(0.02, 0, 0.25, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
@@ -90,38 +96,52 @@ mainFrame.ZIndex = 10
 mainFrame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
+corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = mainFrame
 
--- Title Bar
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(120, 80, 255)
+mainStroke.Transparency = 0.4
+mainStroke.Thickness = 1.5
+mainStroke.Parent = mainFrame
+
+-- Title Bar with Gradient Accent
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
 titleLabel.Size = UDim2.new(1, -70, 0, 30)
-titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Position = UDim2.new(0, 12, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Control Hub"
+titleLabel.Text = "NEXO HUB"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Font = Enum.Font.SourceSansBold
-titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 15
 titleLabel.ZIndex = 11
 titleLabel.Parent = mainFrame
+
+local titleGradient = Instance.new("UIGradient")
+titleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 120, 255))
+})
+titleGradient.Parent = titleLabel
 
 -- Settings Button (Gear icon)
 local settingsButton = Instance.new("TextButton")
 settingsButton.Name = "SettingsButton"
 settingsButton.Size = UDim2.new(0, 25, 0, 25)
 settingsButton.Position = UDim2.new(1, -55, 0, 3)
-settingsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+settingsButton.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 settingsButton.Text = "⚙"
-settingsButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-settingsButton.Font = Enum.Font.SourceSansBold
-settingsButton.TextSize = 14
+settingsButton.TextColor3 = Color3.fromRGB(200, 170, 255)
+settingsButton.Font = Enum.Font.GothamBold
+settingsButton.TextSize = 13
 settingsButton.ZIndex = 11
 settingsButton.Parent = mainFrame
 
 local settingsBtnCorner = Instance.new("UICorner")
-settingsBtnCorner.CornerRadius = UDim.new(0, 4)
+settingsBtnCorner.CornerRadius = UDim.new(0, 6)
 settingsBtnCorner.Parent = settingsButton
 
 -- Global Close ("X") Button
@@ -130,94 +150,49 @@ closeButton.Name = "CloseButton"
 closeButton.Size = UDim2.new(0, 25, 0, 25)
 closeButton.Position = UDim2.new(1, -28, 0, 3)
 closeButton.BackgroundTransparency = 1
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(255, 85, 85)
-closeButton.Font = Enum.Font.SourceSansBold
-closeButton.TextSize = 16
+closeButton.Text = "✕"
+closeButton.TextColor3 = Color3.fromRGB(255, 90, 110)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 14
 closeButton.ZIndex = 11
 closeButton.Parent = mainFrame
 
--- TP Loop Start Button
-local startButton = Instance.new("TextButton")
-startButton.Name = "StartButton"
-startButton.Size = UDim2.new(0.9, 0, 0, 30)
-startButton.Position = UDim2.new(0.05, 0, 0.13, 0)
-startButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
-startButton.Text = "Start TP Loop"
-startButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-startButton.Font = Enum.Font.SourceSansBold
-startButton.TextSize = 14
-startButton.ZIndex = 11
-startButton.Parent = mainFrame
+-- Helper function to create module buttons easily
+local function createModuleButton(name, posY, defaultText)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(0.9, 0, 0, 30)
+    btn.Position = UDim2.new(0.05, 0, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(45, 25, 35)
+    btn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    btn.Text = defaultText
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 13
+    btn.ZIndex = 11
+    btn.Parent = mainFrame
 
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 6)
-btnCorner.Parent = startButton
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = btn
+    
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Color = Color3.fromRGB(255, 255, 255)
+    btnStroke.Transparency = 0.85
+    btnStroke.Parent = btn
 
--- Anti-Murder Toggle Button
-local antiMurderBtn = Instance.new("TextButton")
-antiMurderBtn.Name = "AntiMurderButton"
-antiMurderBtn.Size = UDim2.new(0.9, 0, 0, 30)
-antiMurderBtn.Position = UDim2.new(0.05, 0, 0.31, 0)
-antiMurderBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-antiMurderBtn.Text = "Anti-Murder: OFF"
-antiMurderBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-antiMurderBtn.Font = Enum.Font.SourceSansBold
-antiMurderBtn.TextSize = 14
-antiMurderBtn.ZIndex = 11
-antiMurderBtn.Parent = mainFrame
+    return btn
+end
 
-local antiMurderCorner = Instance.new("UICorner")
-antiMurderCorner.CornerRadius = UDim.new(0, 6)
-antiMurderCorner.Parent = antiMurderBtn
+-- Module Buttons Stack
+local startButton = createModuleButton("StartButton", 35, "Start TP Loop")
+startButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
 
--- Murderer Kill Aura Button
-local murderKAButton = Instance.new("TextButton")
-murderKAButton.Name = "MurderKAButton"
-murderKAButton.Size = UDim2.new(0.9, 0, 0, 30)
-murderKAButton.Position = UDim2.new(0.05, 0, 0.49, 0)
-murderKAButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-murderKAButton.Text = "Murder KA: OFF"
-murderKAButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-murderKAButton.Font = Enum.Font.SourceSansBold
-murderKAButton.TextSize = 14
-murderKAButton.ZIndex = 11
-murderKAButton.Parent = mainFrame
-
-local murderKACorner = Instance.new("UICorner")
-murderKACorner.CornerRadius = UDim.new(0, 6)
-murderKACorner.Parent = murderKAButton
-
--- Sheriff Kill Aura Button
-local sheriffKAButton = Instance.new("TextButton")
-sheriffKAButton.Name = "SheriffKAButton"
-sheriffKAButton.Size = UDim2.new(0.9, 0, 0, 30)
-sheriffKAButton.Position = UDim2.new(0.05, 0, 0.67, 0)
-sheriffKAButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-sheriffKAButton.Text = "Sheriff KA: OFF"
-sheriffKAButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-sheriffKAButton.Font = Enum.Font.SourceSansBold
-sheriffKAButton.TextSize = 14
-sheriffKAButton.ZIndex = 11
-sheriffKAButton.Parent = mainFrame
-
-local sheriffKACorner = Instance.new("UICorner")
-sheriffKACorner.CornerRadius = UDim.new(0, 6)
-sheriffKACorner.Parent = sheriffKAButton
-
--- Freecam Toggle Button
-local toggleButton = Instance.new("TextButton")
-toggleButton.Name = "ToggleButton"
-toggleButton.Size = UDim2.new(0.9, 0, 0, 30)
-toggleButton.Position = UDim2.new(0.05, 0, 0.85, 0)
-toggleButton.Font = Enum.Font.SourceSansBold
-toggleButton.TextSize = 14
-toggleButton.ZIndex = 11
-toggleButton.Parent = mainFrame
-
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 6)
-toggleCorner.Parent = toggleButton
+local antiMurderBtn = createModuleButton("AntiMurderButton", 72, "Anti-Murder: OFF")
+local murderKAButton = createModuleButton("MurderKAButton", 109, "Murder KA: OFF")
+local sheriffKAButton = createModuleButton("SheriffKAButton", 146, "Sheriff KA: OFF")
+local toggleButton   = createModuleButton("ToggleButton", 183, "FREECAM: OFF (ALT)")
+toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 
 ---------------------------------------------------------
 -- SETTINGS MENU / DEVELOPER CONFIG TAB
@@ -226,7 +201,8 @@ local settingsFrame = Instance.new("Frame")
 settingsFrame.Name = "SettingsFrame"
 settingsFrame.Size = UDim2.new(0, 420, 0, 360)
 settingsFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
-settingsFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+settingsFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
 settingsFrame.BorderSizePixel = 0
 settingsFrame.Active = true
 settingsFrame.Draggable = true
@@ -235,17 +211,23 @@ settingsFrame.ZIndex = 20
 settingsFrame.Parent = screenGui
 
 local settingsCorner = Instance.new("UICorner")
-settingsCorner.CornerRadius = UDim.new(0, 8)
+settingsCorner.CornerRadius = UDim.new(0, 10)
 settingsCorner.Parent = settingsFrame
+
+local settingsStroke = Instance.new("UIStroke")
+settingsStroke.Color = Color3.fromRGB(120, 80, 255)
+settingsStroke.Transparency = 0.4
+settingsStroke.Thickness = 1.5
+settingsStroke.Parent = settingsFrame
 
 local settingsTitle = Instance.new("TextLabel")
 settingsTitle.Size = UDim2.new(1, -40, 0, 35)
-settingsTitle.Position = UDim2.new(0, 10, 0, 0)
+settingsTitle.Position = UDim2.new(0, 12, 0, 0)
 settingsTitle.BackgroundTransparency = 1
-settingsTitle.Text = "Developer Config & Console"
+settingsTitle.Text = "NEXO // Config & Console"
 settingsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-settingsTitle.Font = Enum.Font.SourceSansBold
-settingsTitle.TextSize = 16
+settingsTitle.Font = Enum.Font.GothamBold
+settingsTitle.TextSize = 15
 settingsTitle.TextXAlignment = Enum.TextXAlignment.Left
 settingsTitle.ZIndex = 21
 settingsTitle.Parent = settingsFrame
@@ -254,10 +236,10 @@ local settingsClose = Instance.new("TextButton")
 settingsClose.Size = UDim2.new(0, 25, 0, 25)
 settingsClose.Position = UDim2.new(1, -28, 0, 5)
 settingsClose.BackgroundTransparency = 1
-settingsClose.Text = "X"
-settingsClose.TextColor3 = Color3.fromRGB(255, 85, 85)
-settingsClose.Font = Enum.Font.SourceSansBold
-settingsClose.TextSize = 16
+settingsClose.Text = "✕"
+settingsClose.TextColor3 = Color3.fromRGB(255, 90, 110)
+settingsClose.Font = Enum.Font.GothamBold
+settingsClose.TextSize = 14
 settingsClose.ZIndex = 21
 settingsClose.Parent = settingsFrame
 
@@ -268,7 +250,7 @@ configContainer.Position = UDim2.new(0, 10, 0, 40)
 configContainer.BackgroundTransparency = 1
 configContainer.BorderSizePixel = 0
 configContainer.ScrollBarThickness = 4
-configContainer.CanvasSize = UDim2.new(0, 0, 0, 250)
+configContainer.CanvasSize = UDim2.new(0, 0, 0, 300)
 configContainer.ZIndex = 21
 configContainer.Parent = settingsFrame
 
@@ -277,7 +259,6 @@ configLayout.Padding = UDim.new(0, 6)
 configLayout.SortOrder = Enum.SortOrder.LayoutOrder
 configLayout.Parent = configContainer
 
--- Helper function to create configuration inputs
 local function createConfigInput(nameText, defaultVal, callback)
     local row = Instance.new("Frame")
     row.Size = UDim2.new(1, 0, 0, 40)
@@ -288,26 +269,27 @@ local function createConfigInput(nameText, defaultVal, callback)
     label.Size = UDim2.new(0.6, 0, 1, 0)
     label.BackgroundTransparency = 1
     label.Text = nameText
-    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.TextColor3 = Color3.fromRGB(200, 200, 210)
     label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Font = Enum.Font.SourceSans
-    label.TextSize = 13
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 12
     label.ZIndex = 22
     label.Parent = row
 
     local box = Instance.new("TextBox")
     box.Size = UDim2.new(0.4, 0, 0.8, 0)
     box.Position = UDim2.new(0.6, 0, 0.1, 0)
-    box.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    box.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+    box.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
     box.TextColor3 = Color3.fromRGB(255, 255, 255)
     box.Text = tostring(defaultVal)
-    box.Font = Enum.Font.SourceSansBold
-    box.TextSize = 13
+    box.Font = Enum.Font.GothamBold
+    box.TextSize = 12
     box.ZIndex = 22
     box.Parent = row
 
     local boxCorner = Instance.new("UICorner")
-    boxCorner.CornerRadius = UDim.new(0, 4)
+    boxCorner.CornerRadius = UDim.new(0, 6)
     boxCorner.Parent = box
 
     box.FocusLost:Connect(function()
@@ -322,16 +304,21 @@ local function createConfigInput(nameText, defaultVal, callback)
     row.Parent = configContainer
 end
 
--- Console Scrolling Frame for Logs (Right Side of Settings)
+-- Console Scrolling Frame for Logs
 local consoleScroll = Instance.new("ScrollingFrame")
 consoleScroll.Size = UDim2.new(0.53, -5, 1, -85)
 consoleScroll.Position = UDim2.new(0.47, 0, 0, 40)
-consoleScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+consoleScroll.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 consoleScroll.BorderSizePixel = 0
 consoleScroll.ScrollBarThickness = 6
 consoleScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 consoleScroll.ZIndex = 21
 consoleScroll.Parent = settingsFrame
+
+local consoleCorner = Instance.new("UICorner")
+consoleCorner.CornerRadius = UDim.new(0, 6)
+consoleCorner.Parent = consoleScroll
 
 local consoleLayout = Instance.new("UIListLayout")
 consoleLayout.Padding = UDim.new(0, 2)
@@ -353,13 +340,13 @@ local function logToConsole(message, messageType)
     logRow.ZIndex = 22
     
     if messageType == Enum.MessageType.MessageOutput then
-        logRow.TextColor3 = Color3.fromRGB(200, 200, 200)
+        logRow.TextColor3 = Color3.fromRGB(180, 180, 190)
     elseif messageType == Enum.MessageType.MessageWarning then
-        logRow.TextColor3 = Color3.fromRGB(255, 200, 50)
+        logRow.TextColor3 = Color3.fromRGB(255, 200, 80)
     elseif messageType == Enum.MessageType.MessageError then
-        logRow.TextColor3 = Color3.fromRGB(255, 80, 80)
+        logRow.TextColor3 = Color3.fromRGB(255, 90, 110)
     else
-        logRow.TextColor3 = Color3.fromRGB(100, 200, 255)
+        logRow.TextColor3 = Color3.fromRGB(140, 120, 255)
     end
     
     logRow.Parent = consoleScroll
@@ -370,13 +357,14 @@ LogService.MessageOut:Connect(function(message, messageType)
     logToConsole(message, messageType)
 end)
 
--- Command Bar Input Box (Bottom of Settings Window)
 local commandInput = Instance.new("TextBox")
 commandInput.Size = UDim2.new(1, -20, 0, 35)
 commandInput.Position = UDim2.new(0, 10, 1, -40)
-commandInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+commandInput.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 commandInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-commandInput.PlaceholderText = "Type command here (e.g. toggle antimurder, set speed 60)..."
+commandInput.PlaceholderText = "Type command here..."
+commandInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
 commandInput.Text = ""
 commandInput.Font = Enum.Font.Code
 commandInput.TextSize = 12
@@ -384,11 +372,11 @@ commandInput.ZIndex = 21
 commandInput.Parent = settingsFrame
 
 local cmdCorner = Instance.new("UICorner")
-cmdCorner.CornerRadius = UDim.new(0, 4)
+cmdCorner.CornerRadius = UDim.new(0, 6)
 cmdCorner.Parent = commandInput
 
 ---------------------------------------------------------
--- FORWARD DECLARATIONS FOR CONTROLS & COMMANDS
+-- FORWARD DECLARATIONS
 ---------------------------------------------------------
 local startTeleportSequence, disableFreecam, enableFreecam
 
@@ -418,28 +406,19 @@ local function processCommand(text)
         if moduleName == "antimurder" or moduleName == "am" then
             isAntiMurderActive = not isAntiMurderActive
             antiMurderBtn.Text = "Anti-Murder: " .. (isAntiMurderActive and "ON" or "OFF")
-            antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 50)
-            logToConsole("Toggled Anti-Murder to " .. tostring(isAntiMurderActive), Enum.MessageType.MessageOutput)
+            antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
         elseif moduleName == "murderka" or moduleName == "mka" then
             isMurderKillAuraActive = not isMurderKillAuraActive
             murderKAButton.Text = "Murder KA: " .. (isMurderKillAuraActive and "ON" or "OFF")
-            murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 50)
-            logToConsole("Toggled Murder KA to " .. tostring(isMurderKillAuraActive), Enum.MessageType.MessageOutput)
+            murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
         elseif moduleName == "sheriffka" or moduleName == "ska" then
             isSheriffKillAuraActive = not isSheriffKillAuraActive
             sheriffKAButton.Text = "Sheriff KA: " .. (isSheriffKillAuraActive and "ON" or "OFF")
-            sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(150, 50, 50)
-            logToConsole("Toggled Sheriff KA to " .. tostring(isSheriffKillAuraActive), Enum.MessageType.MessageOutput)
+            sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
         elseif moduleName == "freecam" or moduleName == "fc" then
             if isFreecamActive then disableFreecam() else enableFreecam() end
-            logToConsole("Toggled Freecam", Enum.MessageType.MessageOutput)
         elseif moduleName == "tploop" or moduleName == "tp" then
-            if not isTeleportRunning then
-                task.spawn(startTeleportSequence)
-            else
-                isTeleportRunning = false
-            end
-            logToConsole("Toggled TP Loop", Enum.MessageType.MessageOutput)
+            if not isTeleportRunning then task.spawn(startTeleportSequence) else isTeleportRunning = false end
         else
             logToConsole("Unknown module: " .. moduleName, Enum.MessageType.MessageError)
         end
@@ -449,31 +428,41 @@ local function processCommand(text)
         local val = tonumber(parts[3])
 
         if not settingName or not val then
-            logToConsole("Usage: set [murderka/sheriffka/antimurder/height/speed] [value]", Enum.MessageType.MessageWarning)
+            logToConsole("Usage: set [murderka/sheriffka/antimurder/height/speed/gui_trans/elem_trans] [value]", Enum.MessageType.MessageWarning)
             return
         end
 
         if settingName == "murderka" or settingName == "mka" then
             CONFIG.MURDER_KA_DISTANCE = val
-            logToConsole("Set Murder KA Distance to " .. val, Enum.MessageType.MessageOutput)
         elseif settingName == "sheriffka" or settingName == "ska" then
             CONFIG.SHERIFF_KA_DISTANCE = val
-            logToConsole("Set Sheriff KA Distance to " .. val, Enum.MessageType.MessageOutput)
         elseif settingName == "antimurder" or settingName == "am" then
             CONFIG.ANTI_MURDER_DISTANCE = val
-            logToConsole("Set Anti-Murder Distance to " .. val, Enum.MessageType.MessageOutput)
         elseif settingName == "height" or settingName == "sky" then
             CONFIG.ANTI_MURDER_SKY_HEIGHT = val
-            logToConsole("Set Anti-Murder Height to " .. val, Enum.MessageType.MessageOutput)
         elseif settingName == "speed" then
             CONFIG.MOVE_SPEED = val
-            logToConsole("Set Freecam Speed to " .. val, Enum.MessageType.MessageOutput)
+        elseif settingName == "gui_trans" then
+            CONFIG.GUI_TRANSPARENCY = math.clamp(val, 0, 1)
+            mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
+            settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
+            logToConsole("Main GUI transparency set to: " .. CONFIG.GUI_TRANSPARENCY, Enum.MessageType.MessageInfo)
+        elseif settingName == "elem_trans" then
+            CONFIG.ELEMENT_TRANSPARENCY = math.clamp(val, 0, 1)
+            settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+            antiMurderBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+            murderKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+            sheriffKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+            toggleButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+            consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+            commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+            logToConsole("Element transparency set to: " .. CONFIG.ELEMENT_TRANSPARENCY, Enum.MessageType.MessageInfo)
         else
             logToConsole("Unknown setting: " .. settingName, Enum.MessageType.MessageError)
         end
     elseif cmd == "help" then
         logToConsole("Commands: toggle [antimurder/murderka/sheriffka/freecam/tploop]", Enum.MessageType.MessageInfo)
-        logToConsole("Commands: set [murderka/sheriffka/antimurder/height/speed] [val]", Enum.MessageType.MessageInfo)
+        logToConsole("Commands: set [murderka/sheriffka/antimurder/height/speed/gui_trans/elem_trans] [val]", Enum.MessageType.MessageInfo)
     else
         logToConsole("Unknown command. Type 'help' for info.", Enum.MessageType.MessageError)
     end
@@ -486,35 +475,37 @@ commandInput.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-settingsButton.MouseButton1Click:Connect(function()
-    settingsFrame.Visible = not settingsFrame.Visible
-end)
+settingsButton.MouseButton1Click:Connect(function() settingsFrame.Visible = not settingsFrame.Visible end)
+settingsClose.MouseButton1Click:Connect(function() settingsFrame.Visible = false end)
 
-settingsClose.MouseButton1Click:Connect(function()
-    settingsFrame.Visible = false
-end)
-
--- Spectate Bar (Bottom Center)
+-- Spectate Bar
 local specFrame = Instance.new("Frame")
 specFrame.Size = UDim2.new(0, 300, 0, 45)
 specFrame.Position = UDim2.new(0.5, -150, 0.88, 0)
-specFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+specFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+specFrame.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 specFrame.BorderSizePixel = 0
 specFrame.Visible = false
 specFrame.ZIndex = 10
 specFrame.Parent = screenGui
 
 local specCorner = Instance.new("UICorner")
-specCorner.CornerRadius = UDim.new(0, 8)
+specCorner.CornerRadius = UDim.new(0, 10)
 specCorner.Parent = specFrame
+
+local specStroke = Instance.new("UIStroke")
+specStroke.Color = Color3.fromRGB(120, 80, 255)
+specStroke.Transparency = 0.4
+specStroke.Parent = specFrame
 
 local prevBtn = Instance.new("TextButton")
 prevBtn.Size = UDim2.new(0, 40, 1, -10)
 prevBtn.Position = UDim2.new(0, 5, 0, 5)
 prevBtn.Text = "<"
-prevBtn.Font = Enum.Font.SourceSansBold
-prevBtn.TextSize = 20
-prevBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+prevBtn.Font = Enum.Font.GothamBold
+prevBtn.TextSize = 18
+prevBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+prevBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 prevBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 prevBtn.ZIndex = 11
 prevBtn.Parent = specFrame
@@ -527,9 +518,10 @@ local nextBtn = Instance.new("TextButton")
 nextBtn.Size = UDim2.new(0, 40, 1, -10)
 nextBtn.Position = UDim2.new(1, -45, 0, 5)
 nextBtn.Text = ">"
-nextBtn.Font = Enum.Font.SourceSansBold
-nextBtn.TextSize = 20
-nextBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+nextBtn.Font = Enum.Font.GothamBold
+nextBtn.TextSize = 18
+nextBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+nextBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 nextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 nextBtn.ZIndex = 11
 nextBtn.Parent = specFrame
@@ -542,8 +534,8 @@ local nameLabel = Instance.new("TextLabel")
 nameLabel.Size = UDim2.new(1, -100, 1, -10)
 nameLabel.Position = UDim2.new(0, 50, 0, 5)
 nameLabel.BackgroundTransparency = 1
-nameLabel.Font = Enum.Font.SourceSansBold
-nameLabel.TextSize = 16
+nameLabel.Font = Enum.Font.GothamBold
+nameLabel.TextSize = 14
 nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 nameLabel.Text = "Spectating: None"
 nameLabel.ZIndex = 11
@@ -555,8 +547,9 @@ nameLabel.Parent = specFrame
 local listFrame = Instance.new("Frame")
 listFrame.Name = "PlayerListFrame"
 listFrame.Size = UDim2.new(0, 220, 0, 250)
-listFrame.Position = UDim2.new(0.02, 0, 0.3, 270)
-listFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+listFrame.Position = UDim2.new(0.02, 0, 0.53, 0)
+listFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+listFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
 listFrame.BorderSizePixel = 0
 listFrame.Active = true
 listFrame.Draggable = true
@@ -564,18 +557,24 @@ listFrame.ZIndex = 10
 listFrame.Parent = screenGui
 
 local listCorner = Instance.new("UICorner")
-listCorner.CornerRadius = UDim.new(0, 8)
+listCorner.CornerRadius = UDim.new(0, 10)
 listCorner.Parent = listFrame
+
+local listStroke = Instance.new("UIStroke")
+listStroke.Color = Color3.fromRGB(120, 80, 255)
+listStroke.Transparency = 0.4
+listStroke.Thickness = 1.5
+listStroke.Parent = listFrame
 
 local listTitle = Instance.new("TextLabel")
 listTitle.Name = "Header"
 listTitle.Size = UDim2.new(1, 0, 0, 30)
 listTitle.Position = UDim2.new(0, 0, 0, 0)
 listTitle.BackgroundTransparency = 1
-listTitle.Text = "Player Roles"
+listTitle.Text = "NEXO // Player Roles"
 listTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-listTitle.Font = Enum.Font.SourceSansBold
-listTitle.TextSize = 16
+listTitle.Font = Enum.Font.GothamBold
+listTitle.TextSize = 14
 listTitle.ZIndex = 11
 listTitle.Parent = listFrame
 
@@ -598,32 +597,43 @@ listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     scrollContainer.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
 end)
 
--- Build configuration fields in configContainer
+-- Fill Settings Config Fields (Default Transparency set to 0.1)
 createConfigInput("Murder KA Dist:", CONFIG.MURDER_KA_DISTANCE, function(v) CONFIG.MURDER_KA_DISTANCE = v end)
 createConfigInput("Sheriff KA Dist:", CONFIG.SHERIFF_KA_DISTANCE, function(v) CONFIG.SHERIFF_KA_DISTANCE = v end)
 createConfigInput("Anti-Murder Dist:", CONFIG.ANTI_MURDER_DISTANCE, function(v) CONFIG.ANTI_MURDER_DISTANCE = v end)
 createConfigInput("Anti-Murder Height:", CONFIG.ANTI_MURDER_SKY_HEIGHT, function(v) CONFIG.ANTI_MURDER_SKY_HEIGHT = v end)
 createConfigInput("Freecam Speed:", CONFIG.MOVE_SPEED, function(v) CONFIG.MOVE_SPEED = v end)
+createConfigInput("GUI Transparency:", CONFIG.GUI_TRANSPARENCY, function(v) 
+    CONFIG.GUI_TRANSPARENCY = math.clamp(v, 0, 1)
+    mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
+    settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
+    listFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
+end)
+createConfigInput("Elem Transparency:", CONFIG.ELEMENT_TRANSPARENCY, function(v)
+    CONFIG.ELEMENT_TRANSPARENCY = math.clamp(v, 0, 1)
+    settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    antiMurderBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    murderKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    sheriffKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    toggleButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+end)
 
 ---------------------------------------------------------
 -- HELPER FUNCTIONS & ROLE SCANNER
 ---------------------------------------------------------
 local function getPlayerRole(player)
     if not player then return "Innocent", COLOR_INNOCENT end
-    
-    local hasGun = false
-    local hasKnifeRole = false
+    local hasGun, hasKnifeRole = false, false
 
     local function scanTools(container)
         if not container then return end
         for _, child in ipairs(container:GetChildren()) do
             if child:IsA("Tool") then
                 local name = string.lower(child.Name)
-                if name == "gun" then
-                    hasGun = true
-                elseif name == "knife" or name == "kinfe" then
-                    hasKnifeRole = true
-                end
+                if name == "gun" then hasGun = true
+                elseif name == "knife" or name == "kinfe" then hasKnifeRole = true end
             end
         end
     end
@@ -631,19 +641,14 @@ local function getPlayerRole(player)
     scanTools(player.Character)
     scanTools(player:FindFirstChild("Backpack"))
 
-    if hasKnifeRole then
-        return "Murder", COLOR_MURDER
-    elseif hasGun then
-        return "Sheriff", COLOR_SHERIFF
-    else
-        return "Innocent", COLOR_INNOCENT
-    end
+    if hasKnifeRole then return "Murder", COLOR_MURDER
+    elseif hasGun then return "Sheriff", COLOR_SHERIFF
+    else return "Innocent", COLOR_INNOCENT end
 end
 
 local function applyHighlight(player, roleText, roleColor)
     local char = player.Character
     if not char then return end
-
     local existingHighlight = char:FindFirstChild("RoleHighlight")
 
     if roleText == "Sheriff" or roleText == "Murder" then
@@ -658,17 +663,13 @@ local function applyHighlight(player, roleText, roleColor)
         existingHighlight.FillColor = roleColor
         existingHighlight.OutlineColor = roleColor
     else
-        if existingHighlight then
-            existingHighlight:Destroy()
-        end
+        if existingHighlight then existingHighlight:Destroy() end
     end
 end
 
 local function updatePlayerList()
     for _, child in ipairs(scrollContainer:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
+        if child:IsA("Frame") then child:Destroy() end
     end
 
     for _, p in ipairs(Players:GetPlayers()) do
@@ -678,35 +679,36 @@ local function updatePlayerList()
         local rowFrame = Instance.new("Frame")
         rowFrame.Name = p.Name
         rowFrame.Size = UDim2.new(1, -6, 0, 22)
-        rowFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        rowFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+        rowFrame.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
         rowFrame.BorderSizePixel = 0
         rowFrame.ZIndex = 12
 
         local rowCorner = Instance.new("UICorner")
-        rowCorner.CornerRadius = UDim.new(0, 4)
+        rowCorner.CornerRadius = UDim.new(0, 5)
         rowCorner.Parent = rowFrame
 
         local pNameLabel = Instance.new("TextLabel")
         pNameLabel.Size = UDim2.new(0.6, 0, 1, 0)
-        pNameLabel.Position = UDim2.new(0, 5, 0, 0)
+        pNameLabel.Position = UDim2.new(0, 6, 0, 0)
         pNameLabel.BackgroundTransparency = 1
         pNameLabel.Text = p.DisplayName
         pNameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         pNameLabel.TextXAlignment = Enum.TextXAlignment.Left
-        pNameLabel.Font = Enum.Font.SourceSans
-        pNameLabel.TextSize = 13
+        pNameLabel.Font = Enum.Font.Gotham
+        pNameLabel.TextSize = 12
         pNameLabel.ZIndex = 13
         pNameLabel.Parent = rowFrame
 
         local roleLabel = Instance.new("TextLabel")
-        roleLabel.Size = UDim2.new(0.4, -5, 1, 0)
+        roleLabel.Size = UDim2.new(0.4, -6, 1, 0)
         roleLabel.Position = UDim2.new(0.6, 0, 0, 0)
         roleLabel.BackgroundTransparency = 1
         roleLabel.Text = roleText
         roleLabel.TextColor3 = roleColor
         roleLabel.TextXAlignment = Enum.TextXAlignment.Right
-        roleLabel.Font = Enum.Font.SourceSansBold
-        roleLabel.TextSize = 13
+        roleLabel.Font = Enum.Font.GothamBold
+        roleLabel.TextSize = 12
         roleLabel.ZIndex = 13
         roleLabel.Parent = rowFrame
 
@@ -726,11 +728,8 @@ local function getEquippedToolType(character)
     for _, child in ipairs(character:GetChildren()) do
         if child:IsA("Tool") then
             local name = string.lower(child.Name)
-            if name == "gun" then
-                return "Gun"
-            elseif name == "knife" or name == "kinfe" then
-                return "Knife"
-            end
+            if name == "gun" then return "Gun"
+            elseif name == "knife" or name == "kinfe" then return "Knife" end
         end
     end
     return "None"
@@ -741,36 +740,27 @@ local function hasKnife(player)
         for _, child in ipairs(player.Character:GetChildren()) do
             if child:IsA("Tool") then
                 local name = string.lower(child.Name)
-                if name == "knife" or name == "kinfe" then
-                    return true
-                end
+                if name == "knife" or name == "kinfe" then return true end
             end
         end
     end
-
     local backpack = player:FindFirstChild("Backpack")
     if backpack then
         for _, child in ipairs(backpack:GetChildren()) do
             if child:IsA("Tool") then
                 local name = string.lower(child.Name)
-                if name == "knife" or name == "kinfe" then
-                    return true
-                end
+                if name == "knife" or name == "kinfe" then return true end
             end
         end
     end
-
     return false
 end
 
 local function simulateLeftClick()
     local viewport = workspace.CurrentCamera.ViewportSize
-    local centerX = viewport.X / 2
-    local centerY = viewport.Y / 2
-    
-    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
+    VirtualInputManager:SendMouseButtonEvent(viewport.X / 2, viewport.Y / 2, 0, true, game, 0)
     task.wait(0.01)
-    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
+    VirtualInputManager:SendMouseButtonEvent(viewport.X / 2, viewport.Y / 2, 0, false, game, 0)
 end
 
 local function clickOnPosition(worldPos)
@@ -782,7 +772,9 @@ local function clickOnPosition(worldPos)
     end
 end
 
--- Teleport Loop task
+---------------------------------------------------------
+-- EXISTING GAMEPLAY LOOPS
+---------------------------------------------------------
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -803,7 +795,6 @@ end)
 local function isVisibleToPlayer(targetPart)
     local char = localPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
-    
     local myPos = char.HumanoidRootPart.Position
     local targetPos = targetPart.Position
     if (targetPos - myPos).Magnitude > 60 then return false end
@@ -817,12 +808,10 @@ local function isVisibleToPlayer(targetPart)
     raycastParams.IgnoreWater = true
     
     local rayResult = workspace:Raycast(camera.CFrame.Position, targetPos - camera.CFrame.Position, raycastParams)
-    if rayResult then return false end
-    
-    return true
+    return rayResult == nil
 end
 
--- Anti-Murder Logic Loop
+-- Anti-Murder Loop
 task.spawn(function()
     while true do
         task.wait(0.1)
@@ -836,10 +825,8 @@ task.spawn(function()
                     if p ~= localPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                         local role, _ = getPlayerRole(p)
                         if role == "Murder" then
-                            local targetPart = p.Character:FindFirstChild("HumanoidRootPart")
-                            local dist = (targetPart.Position - myPos).Magnitude
-                            
-                            if dist <= CONFIG.ANTI_MURDER_DISTANCE and isVisibleToPlayer(targetPart) then
+                            local targetPart = p.Character.HumanoidRootPart
+                            if (targetPart.Position - myPos).Magnitude <= CONFIG.ANTI_MURDER_DISTANCE and isVisibleToPlayer(targetPart) then
                                 myHRP.CFrame = myHRP.CFrame * CFrame.new(0, CONFIG.ANTI_MURDER_SKY_HEIGHT, 0)
                                 task.wait(2)
                                 break
@@ -852,26 +839,19 @@ task.spawn(function()
     end
 end)
 
--- Murderer Kill Aura Loop
+-- Murderer Kill Aura
 task.spawn(function()
     while true do
         task.wait(0.05)
         if isMurderKillAuraActive then
             local myChar = localPlayer.Character
-            local myRole, _ = getPlayerRole(localPlayer)
-            
-            if myChar and myChar:FindFirstChild("HumanoidRootPart") and myRole == "Murder" then
+            if myChar and myChar:FindFirstChild("HumanoidRootPart") and getPlayerRole(localPlayer) == "Murder" then
                 local myHrp = myChar.HumanoidRootPart
-                local myPos = myHrp.Position
-                
                 for _, targetP in ipairs(Players:GetPlayers()) do
                     if targetP ~= localPlayer and targetP.Character and targetP.Character:FindFirstChild("HumanoidRootPart") then
                         local targetHrp = targetP.Character.HumanoidRootPart
-                        local dist = (targetHrp.Position - myPos).Magnitude
-                        
-                        if dist <= CONFIG.MURDER_KA_DISTANCE then
-                            local currentTool = getEquippedToolType(myChar)
-                            if currentTool ~= "Knife" then
+                        if (targetHrp.Position - myHrp.Position).Magnitude <= CONFIG.MURDER_KA_DISTANCE then
+                            if getEquippedToolType(myChar) ~= "Knife" then
                                 local backpack = localPlayer:FindFirstChild("Backpack")
                                 if backpack then
                                     for _, tool in ipairs(backpack:GetChildren()) do
@@ -882,7 +862,6 @@ task.spawn(function()
                                     end
                                 end
                             end
-                            
                             local originalCFrame = myHrp.CFrame
                             local attackStart = os.clock()
                             while isMurderKillAuraActive and targetP.Character and targetHrp.Parent and (os.clock() - attackStart < CONFIG.ATTACK_DURATION) do
@@ -890,7 +869,6 @@ task.spawn(function()
                                 simulateLeftClick()
                                 RunService.Heartbeat:Wait()
                             end
-                            
                             myHrp.CFrame = originalCFrame
                             task.wait(0.2)
                             break
@@ -902,26 +880,19 @@ task.spawn(function()
     end
 end)
 
--- Sheriff Kill Aura Loop
+-- Sheriff Kill Aura
 task.spawn(function()
     while true do
         task.wait(0.05)
         if isSheriffKillAuraActive then
             local myChar = localPlayer.Character
-            local myRole, _ = getPlayerRole(localPlayer)
-            
-            if myChar and myChar:FindFirstChild("HumanoidRootPart") and myRole == "Sheriff" then
+            if myChar and myChar:FindFirstChild("HumanoidRootPart") and getPlayerRole(localPlayer) == "Sheriff" then
                 local myHrp = myChar.HumanoidRootPart
-                local myPos = myHrp.Position
-                
                 for _, targetP in ipairs(Players:GetPlayers()) do
                     if targetP ~= localPlayer and targetP.Character and targetP.Character:FindFirstChild("HumanoidRootPart") then
-                        local targetRole, _ = getPlayerRole(targetP)
-                        if targetRole == "Murder" then
+                        if getPlayerRole(targetP) == "Murder" then
                             local targetHrp = targetP.Character.HumanoidRootPart
-                            local dist = (targetHrp.Position - myPos).Magnitude
-                            
-                            if dist <= CONFIG.SHERIFF_KA_DISTANCE then
+                            if (targetHrp.Position - myHrp.Position).Magnitude <= CONFIG.SHERIFF_KA_DISTANCE then
                                 clickOnPosition(targetHrp.Position)
                                 task.wait(0.1)
                             end
@@ -935,56 +906,36 @@ end)
 
 function startTeleportSequence()
     if isTeleportRunning then return end
-
     local myCharacter = localPlayer.Character or localPlayer.CharacterAdded:Wait()
     local myHRP = myCharacter:WaitForChild("HumanoidRootPart")
     local toolType = getEquippedToolType(myCharacter)
 
     isTeleportRunning = true
     startButton.Text = "Running..."
-    startButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+    startButton.BackgroundColor3 = Color3.fromRGB(30, 45, 40)
 
     if toolType == "None" then
         myHRP.CFrame = myHRP.CFrame * CFrame.new(0, 100, 0)
         task.wait(5)
     else
-        local visitedPlayers = {}
-
+        local visited = {}
         for _, targetP in ipairs(Players:GetPlayers()) do
-            local currentTool = getEquippedToolType(myCharacter)
-            if currentTool == "None" or not isTeleportRunning then
-                break
-            end
-
-            if targetP ~= localPlayer and not visitedPlayers[targetP] then
-                visitedPlayers[targetP] = true
-
-                local shouldTarget = false
-                if currentTool == "Gun" then
-                    shouldTarget = hasKnife(targetP)
-                elseif currentTool == "Knife" then
-                    shouldTarget = true
-                end
-
-                if shouldTarget then
+            if getEquippedToolType(myCharacter) == "None" or not isTeleportRunning then break end
+            if targetP ~= localPlayer and not visited[targetP] then
+                visited[targetP] = true
+                if getEquippedToolType(myCharacter) == "Knife" or hasKnife(targetP) then
                     local targetChar = targetP.Character
                     if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
                         local targetHRP = targetChar.HumanoidRootPart
                         local startTime = os.clock()
                         local lastClick = 0
-
                         while isTeleportRunning and (os.clock() - startTime < CONFIG.ATTACK_DURATION) do
-                            local liveTool = getEquippedToolType(myCharacter)
-                            if liveTool == "None" then break end
-                            if not targetChar or not targetHRP.Parent then break end
-
+                            if getEquippedToolType(myCharacter) == "None" or not targetChar or not targetHRP.Parent then break end
                             myHRP.CFrame = targetHRP.CFrame
-
                             if os.clock() - lastClick >= CONFIG.CLICK_INTERVAL then
                                 simulateLeftClick()
                                 lastClick = os.clock()
                             end
-
                             RunService.Heartbeat:Wait()
                         end
                     end
@@ -995,7 +946,7 @@ function startTeleportSequence()
 
     isTeleportRunning = false
     startButton.Text = "Start TP Loop"
-    startButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+    startButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
 end
 
 ---------------------------------------------------------
@@ -1004,13 +955,13 @@ end
 local function updateButtonUI()
     if isFreecamActive then
         toggleButton.Text = "FREECAM: ON (ALT)"
-        toggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
         toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
         specFrame.Visible = true
     else
         toggleButton.Text = "FREECAM: OFF (ALT)"
-        toggleButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-        toggleButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        toggleButton.TextColor3 = Color3.fromRGB(200, 200, 210)
         specFrame.Visible = false
     end
 end
@@ -1033,10 +984,8 @@ local function setSpectateTarget(index)
         nameLabel.Text = "Freecam Mode (No Players)"
         return
     end
-
     if index > #targets then index = 1 end
     if index < 1 then index = #targets end
-
     spectateIndex = index
     targetPlayer = targets[spectateIndex]
     isSpectating = true
@@ -1046,36 +995,25 @@ end
 local function createGhostModel(originalChar)
     local hrp = originalChar:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
-
     local ghost = Instance.new("Model")
     ghost.Name = "GhostAvatar"
-
     local ghostHrp = hrp:Clone()
-    ghostHrp.Transparency = 0.5
-    ghostHrp.Color = Color3.fromRGB(150, 200, 255)
+    ghostHrp.Transparency = 0.1
+    ghostHrp.Color = Color3.fromRGB(150, 120, 255)
     ghostHrp.Material = Enum.Material.ForceField
     ghostHrp.CanCollide = false
     ghostHrp.Anchored = true
     ghostHrp.Parent = ghost
-
     ghost.PrimaryPart = ghostHrp
     ghost.Parent = workspace
     return ghost
 end
 
-local function sinkInput()
-    return Enum.ContextActionResult.Sink
-end
-
 local function freezeCharacterMovement()
     local character = localPlayer.Character
     if not character then return end
-    
     local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid:Move(Vector3.zero, true)
-    end
-    
+    if humanoid then humanoid:Move(Vector3.zero, true) end
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if hrp then
         hrp.AssemblyLinearVelocity = Vector3.zero
@@ -1086,18 +1024,12 @@ end
 local function restoreCameraToPlayer()
     local character = localPlayer.Character
     if not character then return end
-
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     local hrp = character:FindFirstChild("HumanoidRootPart")
-
     if humanoid then
         camera.CameraType = Enum.CameraType.Track
         camera.CameraSubject = humanoid
-        
-        if hrp then
-            camera.CFrame = hrp.CFrame * CFrame.new(0, 2, 8)
-        end
-
+        if hrp then camera.CFrame = hrp.CFrame * CFrame.new(0, 2, 8) end
         task.defer(function()
             camera.CameraType = Enum.CameraType.Custom
             camera.CameraSubject = humanoid
@@ -1110,45 +1042,26 @@ function disableFreecam()
     isSpectating = false
     isRightMouseDown = false
     targetPlayer = nil
-
-    if renderConnection then
-        renderConnection:Disconnect()
-        renderConnection = nil
-    end
-
-    pcall(function()
-        ContextActionService:UnbindAction(ACTION_FREEZE)
-    end)
-
-    if ghostCharacter then
-        ghostCharacter:Destroy()
-        ghostCharacter = nil
-    end
-
+    if renderConnection then renderConnection:Disconnect(); renderConnection = nil end
+    pcall(function() ContextActionService:UnbindAction(ACTION_FREEZE) end)
+    if ghostCharacter then ghostCharacter:Destroy(); ghostCharacter = nil end
     restoreCameraToPlayer()
     UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-
     updateButtonUI()
 end
 
 local function teleportToFreecam()
     if not isFreecamActive then return end
-
     local targetCFrame = camera.CFrame
     local character = localPlayer.Character
-    if character then
-        local hrp = character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = targetCFrame
-        end
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = targetCFrame
     end
-
     disableFreecam()
 end
 
 function enableFreecam()
     if isFreecamActive then return end
-
     local realCharacter = localPlayer.Character
     if not realCharacter or not realCharacter:FindFirstChild("HumanoidRootPart") then return end
 
@@ -1156,39 +1069,26 @@ function enableFreecam()
     isSpectating = false
     targetPlayer = nil
     nameLabel.Text = "Free Flying"
-
     updateButtonUI()
     freezeCharacterMovement()
 
     pcall(function()
         ContextActionService:BindActionAtPriority(
-            ACTION_FREEZE,
-            sinkInput,
-            false,
+            ACTION_FREEZE, function() return Enum.ContextActionResult.Sink end, false,
             Enum.ContextActionPriority.High.Value,
-            Enum.KeyCode.W,
-            Enum.KeyCode.A,
-            Enum.KeyCode.S,
-            Enum.KeyCode.D,
-            Enum.KeyCode.Space,
-            Enum.KeyCode.LeftShift,
-            Enum.KeyCode.ButtonA
+            Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D, Enum.KeyCode.Space, Enum.KeyCode.LeftShift
         )
     end)
 
     ghostCharacter = createGhostModel(realCharacter)
-
     local rx, ry, _ = camera.CFrame:ToOrientation()
-    pitch = rx
-    yaw = ry
+    pitch, yaw = rx, ry
     cameraPos = camera.CFrame.Position
-
     camera.CameraType = Enum.CameraType.Scriptable
     UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 
     renderConnection = RunService.RenderStepped:Connect(function(deltaTime)
         if not isFreecamActive then return end
-
         freezeCharacterMovement()
 
         if isRightMouseDown then
@@ -1199,14 +1099,13 @@ function enableFreecam()
         end
 
         local cameraRotation = CFrame.Angles(0, yaw, 0) * CFrame.Angles(pitch, 0, 0)
-
         local moveVector = Vector3.zero
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector += Vector3.new(0, 0, -1) end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVector += Vector3.new(0, 0, 1) end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVector += Vector3.new(-1, 0, 0) end
         if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVector += Vector3.new(1, 0, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.E) or UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVector += Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Q) or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVector += Vector3.new(0, -1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVector += Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVector += Vector3.new(0, -1, 0) end
 
         if moveVector.Magnitude > 0 and isSpectating then
             isSpectating = false
@@ -1215,13 +1114,10 @@ function enableFreecam()
         end
 
         if isSpectating and targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local targetPos = targetPlayer.Character.HumanoidRootPart.Position
-            cameraPos = targetPos - (cameraRotation.LookVector * 12) + Vector3.new(0, 3, 0)
+            cameraPos = targetPlayer.Character.HumanoidRootPart.Position - (cameraRotation.LookVector * 12) + Vector3.new(0, 3, 0)
         else
             local speed = CONFIG.MOVE_SPEED
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                speed *= 2
-            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then speed *= 2 end
             cameraPos += (cameraRotation * moveVector) * speed * deltaTime
         end
 
@@ -1230,92 +1126,47 @@ function enableFreecam()
 end
 
 ---------------------------------------------------------
--- CONNECTIONS & BINDINGS
+-- UI CONNECTIONS & EVENTS
 ---------------------------------------------------------
-startButton.MouseButton1Click:Connect(function()
-    task.spawn(startTeleportSequence)
-end)
-
+startButton.MouseButton1Click:Connect(function() task.spawn(startTeleportSequence) end)
 antiMurderBtn.MouseButton1Click:Connect(function()
     isAntiMurderActive = not isAntiMurderActive
-    if isAntiMurderActive then
-        antiMurderBtn.Text = "Anti-Murder: ON"
-        antiMurderBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-    else
-        antiMurderBtn.Text = "Anti-Murder: OFF"
-        antiMurderBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-    end
+    antiMurderBtn.Text = "Anti-Murder: " .. (isAntiMurderActive and "ON" or "OFF")
+    antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
 end)
-
 murderKAButton.MouseButton1Click:Connect(function()
     isMurderKillAuraActive = not isMurderKillAuraActive
-    if isMurderKillAuraActive then
-        murderKAButton.Text = "Murder KA: ON"
-        murderKAButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-    else
-        murderKAButton.Text = "Murder KA: OFF"
-        murderKAButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-    end
+    murderKAButton.Text = "Murder KA: " .. (isMurderKillAuraActive and "ON" or "OFF")
+    murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
 end)
-
 sheriffKAButton.MouseButton1Click:Connect(function()
     isSheriffKillAuraActive = not isSheriffKillAuraActive
-    if isSheriffKillAuraActive then
-        sheriffKAButton.Text = "Sheriff KA: ON"
-        sheriffKAButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-    else
-        sheriffKAButton.Text = "Sheriff KA: OFF"
-        sheriffKAButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-    end
+    sheriffKAButton.Text = "Sheriff KA: " .. (isSheriffKillAuraActive and "ON" or "OFF")
+    sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
 end)
 
-prevBtn.MouseButton1Click:Connect(function()
-    if isFreecamActive then
-        setSpectateTarget(spectateIndex - 1)
-    end
-end)
-
-nextBtn.MouseButton1Click:Connect(function()
-    if isFreecamActive then
-        setSpectateTarget(spectateIndex + 1)
-    end
-end)
+prevBtn.MouseButton1Click:Connect(function() if isFreecamActive then setSpectateTarget(spectateIndex - 1) end end)
+nextBtn.MouseButton1Click:Connect(function() if isFreecamActive then setSpectateTarget(spectateIndex + 1) end end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         isRightMouseDown = true
-        if isFreecamActive then
-            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
-        end
+        if isFreecamActive then UserInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition end
     elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
-        if isFreecamActive then
-            teleportToFreecam()
-        end
+        if isFreecamActive then teleportToFreecam() end
     elseif input.KeyCode == CONFIG.TOGGLE_KEY and not gameProcessed then
-        if isFreecamActive then
-            disableFreecam()
-        else
-            enableFreecam()
-        end
+        if isFreecamActive then disableFreecam() else enableFreecam() end
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         isRightMouseDown = false
-        if isFreecamActive then
-            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-        end
+        if isFreecamActive then UserInputService.MouseBehavior = Enum.MouseBehavior.Default end
     end
 end)
 
-toggleButton.MouseButton1Click:Connect(function()
-    if isFreecamActive then
-        disableFreecam()
-    else
-        enableFreecam()
-    end
-end)
+toggleButton.MouseButton1Click:Connect(function() if isFreecamActive then disableFreecam() else enableFreecam() end end)
 
 closeButton.MouseButton1Click:Connect(function()
     isTeleportRunning = false
@@ -1323,18 +1174,11 @@ closeButton.MouseButton1Click:Connect(function()
     isMurderKillAuraActive = false
     isSheriffKillAuraActive = false
     disableFreecam()
-    
     for _, p in ipairs(Players:GetPlayers()) do
-        if p.Character and p.Character:FindFirstChild("RoleHighlight") then
-            p.Character.RoleHighlight:Destroy()
-        end
+        if p.Character and p.Character:FindFirstChild("RoleHighlight") then p.Character.RoleHighlight:Destroy() end
     end
-
     screenGui:Destroy()
 end)
 
-localPlayer.CharacterAdded:Connect(function()
-    disableFreecam()
-end)
-
+localPlayer.CharacterAdded:Connect(function() disableFreecam() end)
 updateButtonUI()
