@@ -5,6 +5,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
+local TweenService = game:GetService("TweenService")
 
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -20,15 +21,16 @@ local LOOK_SENSITIVITY = 0.25
 local TOGGLE_KEY = Enum.KeyCode.LeftAlt
 local ACTION_FREEZE = "FreecamFreezeMovement"
 
--- Role Colors
-local COLOR_INNOCENT = Color3.fromRGB(50, 200, 50)  -- Green
-local COLOR_SHERIFF  = Color3.fromRGB(50, 120, 255) -- Blue
-local COLOR_MURDER   = Color3.fromRGB(230, 50, 50)  -- Red
+-- Role Colors (Vibrant Cyber/Modern Palette)
+local COLOR_INNOCENT = Color3.fromRGB(46, 213, 115)  -- Neon Mint Green
+local COLOR_SHERIFF  = Color3.fromRGB(52, 152, 219)  -- Electric Blue
+local COLOR_MURDER   = Color3.fromRGB(255, 71, 87)   -- Crimson Red
 
 ---------------------------------------------------------
 -- INTERNAL STATE
 ---------------------------------------------------------
 local isTeleportRunning = false
+local isAntiMurderActive = false
 
 local isFreecamActive = false
 local isSpectating = false
@@ -60,131 +62,201 @@ screenGui.DisplayOrder = 100
 screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
--- 1. Main Container Frame (Holds TP and Freecam Controls)
+-- Ultra-Sleek Modern Glassmorphism Helper (Blur-ready look, crisp borders, subtle vignette gradient)
+local function applyCyberStyle(parentInstance, cornerRadius, transparency)
+    parentInstance.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    parentInstance.BackgroundTransparency = transparency or 0.22
+    parentInstance.BorderSizePixel = 0
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = cornerRadius or UDim.new(0, 14)
+    corner.Parent = parentInstance
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.8
+    stroke.Thickness = 1.2
+    stroke.Parent = parentInstance
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 140, 155))
+    })
+    gradient.Rotation = 90
+    gradient.Parent = parentInstance
+    
+    return stroke
+end
+
+-- Smooth Hover & Click Animation helper
+local function applyInteractiveButton(button, defaultColor, activeColor, isActiveCheck)
+    button.BackgroundColor3 = defaultColor
+    button.BackgroundTransparency = 0.2
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = button
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.75
+    stroke.Parent = button
+
+    button.MouseEnter:Connect(function()
+        local base = isActiveCheck() and activeColor or defaultColor
+        local hoverColor = Color3.fromRGB(
+            math.clamp(base.R * 255 + 30, 0, 255),
+            math.clamp(base.G * 255 + 30, 0, 255),
+            math.clamp(base.B * 255 + 30, 0, 255)
+        )
+        TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = hoverColor,
+            BackgroundTransparency = 0.1
+        }):Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        local targetColor = isActiveCheck() and activeColor or defaultColor
+        TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = targetColor,
+            BackgroundTransparency = 0.2
+        }):Play()
+    end)
+end
+
+-- 1. Main Container Frame (Holds TP, Anti-Murder, and Freecam Controls)
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 220, 0, 120)
+mainFrame.Size = UDim2.new(0, 240, 0, 185)
 mainFrame.Position = UDim2.new(0.02, 0, 0.3, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.ZIndex = 10
 mainFrame.Parent = screenGui
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = mainFrame
+applyCyberStyle(mainFrame, UDim.new(0, 14), 0.24)
 
--- Title Bar
+-- Title Bar with glowing indicator status dot
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
-titleLabel.Size = UDim2.new(1, -35, 0, 30)
-titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Size = UDim2.new(1, -35, 0, 38)
+titleLabel.Position = UDim2.new(0, 16, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Control Hub"
+titleLabel.Text = "  Nexus Hub"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Font = Enum.Font.SourceSansBold
-titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 15
 titleLabel.ZIndex = 11
 titleLabel.Parent = mainFrame
 
--- Global Close ("X") Button
+local titleDot = Instance.new("Frame")
+titleDot.Size = UDim2.new(0, 7, 0, 7)
+titleDot.Position = UDim2.new(0, 4, 0, 15)
+titleDot.BackgroundColor3 = Color3.fromRGB(46, 213, 115)
+titleDot.BorderSizePixel = 0
+titleDot.ZIndex = 12
+titleDot.Parent = titleLabel
+local dotCorner = Instance.new("UICorner")
+dotCorner.CornerRadius = UDim.new(1, 0)
+dotCorner.Parent = titleDot
+
+-- Global Close ("✕") Button
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 25, 0, 25)
-closeButton.Position = UDim2.new(1, -28, 0, 3)
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -34, 0, 4)
 closeButton.BackgroundTransparency = 1
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(255, 85, 85)
-closeButton.Font = Enum.Font.SourceSansBold
-closeButton.TextSize = 16
+closeButton.Text = "✕"
+closeButton.TextColor3 = Color3.fromRGB(180, 180, 195)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 14
 closeButton.ZIndex = 11
 closeButton.Parent = mainFrame
+
+closeButton.MouseEnter:Connect(function()
+    TweenService:Create(closeButton, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(255, 80, 80)}):Play()
+end)
+closeButton.MouseLeave:Connect(function()
+    TweenService:Create(closeButton, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(180, 180, 195)}):Play()
+end)
 
 -- TP Loop Start Button
 local startButton = Instance.new("TextButton")
 startButton.Name = "StartButton"
-startButton.Size = UDim2.new(0.9, 0, 0, 32)
-startButton.Position = UDim2.new(0.05, 0, 0.3, 0)
-startButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+startButton.Size = UDim2.new(0.9, 0, 0, 36)
+startButton.Position = UDim2.new(0.05, 0, 0.24, 0)
 startButton.Text = "Start TP Loop"
 startButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-startButton.Font = Enum.Font.SourceSansBold
-startButton.TextSize = 15
+startButton.Font = Enum.Font.GothamBold
+startButton.TextSize = 13
 startButton.ZIndex = 11
 startButton.Parent = mainFrame
+applyInteractiveButton(startButton, Color3.fromRGB(46, 204, 113), Color3.fromRGB(46, 204, 113), function() return isTeleportRunning end)
 
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 6)
-btnCorner.Parent = startButton
+-- Anti-Murder Toggle Button
+local antiMurderBtn = Instance.new("TextButton")
+antiMurderBtn.Name = "AntiMurderButton"
+antiMurderBtn.Size = UDim2.new(0.9, 0, 0, 36)
+antiMurderBtn.Position = UDim2.new(0.05, 0, 0.50, 0)
+antiMurderBtn.Text = "Anti-Murder: OFF"
+antiMurderBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+antiMurderBtn.Font = Enum.Font.GothamBold
+antiMurderBtn.TextSize = 13
+antiMurderBtn.ZIndex = 11
+antiMurderBtn.Parent = mainFrame
+applyInteractiveButton(antiMurderBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(46, 204, 113), function() return isAntiMurderActive end)
 
 -- Freecam Toggle Button
 local toggleButton = Instance.new("TextButton")
 toggleButton.Name = "ToggleButton"
-toggleButton.Size = UDim2.new(0.9, 0, 0, 32)
-toggleButton.Position = UDim2.new(0.05, 0, 0.65, 0)
-toggleButton.Font = Enum.Font.SourceSansBold
-toggleButton.TextSize = 15
+toggleButton.Size = UDim2.new(0.9, 0, 0, 36)
+toggleButton.Position = UDim2.new(0.05, 0, 0.76, 0)
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextSize = 13
 toggleButton.ZIndex = 11
 toggleButton.Parent = mainFrame
-
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 6)
-toggleCorner.Parent = toggleButton
+applyInteractiveButton(toggleButton, Color3.fromRGB(55, 55, 70), Color3.fromRGB(46, 204, 113), function() return isFreecamActive end)
 
 -- Spectate Bar (Bottom Center)
 local specFrame = Instance.new("Frame")
-specFrame.Size = UDim2.new(0, 300, 0, 45)
-specFrame.Position = UDim2.new(0.5, -150, 0.88, 0)
-specFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-specFrame.BorderSizePixel = 0
+specFrame.Size = UDim2.new(0, 330, 0, 50)
+specFrame.Position = UDim2.new(0.5, -165, 0.86, 0)
 specFrame.Visible = false
 specFrame.ZIndex = 10
 specFrame.Parent = screenGui
-
-local specCorner = Instance.new("UICorner")
-specCorner.CornerRadius = UDim.new(0, 8)
-specCorner.Parent = specFrame
+applyCyberStyle(specFrame, UDim.new(0, 12), 0.22)
 
 local prevBtn = Instance.new("TextButton")
-prevBtn.Size = UDim2.new(0, 40, 1, -10)
-prevBtn.Position = UDim2.new(0, 5, 0, 5)
-prevBtn.Text = "<"
-prevBtn.Font = Enum.Font.SourceSansBold
-prevBtn.TextSize = 20
-prevBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+prevBtn.Size = UDim2.new(0, 38, 1, -12)
+prevBtn.Position = UDim2.new(0, 6, 0, 6)
+prevBtn.Text = "◀"
+prevBtn.Font = Enum.Font.GothamBold
+prevBtn.TextSize = 14
 prevBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 prevBtn.ZIndex = 11
 prevBtn.Parent = specFrame
-
-local prevCorner = Instance.new("UICorner")
-prevCorner.CornerRadius = UDim.new(0, 6)
-prevCorner.Parent = prevBtn
+applyInteractiveButton(prevBtn, Color3.fromRGB(50, 50, 65), Color3.fromRGB(70, 70, 90), function() return false end)
 
 local nextBtn = Instance.new("TextButton")
-nextBtn.Size = UDim2.new(0, 40, 1, -10)
-nextBtn.Position = UDim2.new(1, -45, 0, 5)
-nextBtn.Text = ">"
-nextBtn.Font = Enum.Font.SourceSansBold
-nextBtn.TextSize = 20
-nextBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+nextBtn.Size = UDim2.new(0, 38, 1, -12)
+nextBtn.Position = UDim2.new(1, -44, 0, 6)
+nextBtn.Text = "▶"
+nextBtn.Font = Enum.Font.GothamBold
+nextBtn.TextSize = 14
 nextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 nextBtn.ZIndex = 11
 nextBtn.Parent = specFrame
-
-local nextCorner = Instance.new("UICorner")
-nextCorner.CornerRadius = UDim.new(0, 6)
-nextCorner.Parent = nextBtn
+applyInteractiveButton(nextBtn, Color3.fromRGB(50, 50, 65), Color3.fromRGB(70, 70, 90), function() return false end)
 
 local nameLabel = Instance.new("TextLabel")
 nameLabel.Size = UDim2.new(1, -100, 1, -10)
 nameLabel.Position = UDim2.new(0, 50, 0, 5)
 nameLabel.BackgroundTransparency = 1
-nameLabel.Font = Enum.Font.SourceSansBold
-nameLabel.TextSize = 16
-nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+nameLabel.Font = Enum.Font.GothamMedium
+nameLabel.TextSize = 13
+nameLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
 nameLabel.Text = "Spectating: None"
 nameLabel.ZIndex = 11
 nameLabel.Parent = specFrame
@@ -194,43 +266,41 @@ nameLabel.Parent = specFrame
 ---------------------------------------------------------
 local listFrame = Instance.new("Frame")
 listFrame.Name = "PlayerListFrame"
-listFrame.Size = UDim2.new(0, 220, 0, 250)
-listFrame.Position = UDim2.new(0.02, 0, 0.3, 130)
-listFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-listFrame.BorderSizePixel = 0
+listFrame.Size = UDim2.new(0, 240, 0, 270)
+listFrame.Position = UDim2.new(0.02, 0, 0.3, 195)
 listFrame.Active = true
 listFrame.Draggable = true
 listFrame.ZIndex = 10
 listFrame.Parent = screenGui
 
-local listCorner = Instance.new("UICorner")
-listCorner.CornerRadius = UDim.new(0, 8)
-listCorner.Parent = listFrame
+applyCyberStyle(listFrame, UDim.new(0, 14), 0.24)
 
 local listTitle = Instance.new("TextLabel")
 listTitle.Name = "Header"
-listTitle.Size = UDim2.new(1, 0, 0, 30)
-listTitle.Position = UDim2.new(0, 0, 0, 0)
+listTitle.Size = UDim2.new(1, -18, 0, 38)
+listTitle.Position = UDim2.new(0, 16, 0, 0)
 listTitle.BackgroundTransparency = 1
-listTitle.Text = "Player Roles"
+listTitle.Text = "Live Player Roles"
 listTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-listTitle.Font = Enum.Font.SourceSansBold
-listTitle.TextSize = 16
+listTitle.Font = Enum.Font.GothamBold
+listTitle.TextSize = 14
+listTitle.TextXAlignment = Enum.TextXAlignment.Left
 listTitle.ZIndex = 11
 listTitle.Parent = listFrame
 
 local scrollContainer = Instance.new("ScrollingFrame")
-scrollContainer.Size = UDim2.new(1, -10, 1, -35)
-scrollContainer.Position = UDim2.new(0, 5, 0, 30)
+scrollContainer.Size = UDim2.new(1, -12, 1, -44)
+scrollContainer.Position = UDim2.new(0, 6, 0, 38)
 scrollContainer.BackgroundTransparency = 1
 scrollContainer.BorderSizePixel = 0
-scrollContainer.ScrollBarThickness = 4
+scrollContainer.ScrollBarThickness = 3
+scrollContainer.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 170)
 scrollContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollContainer.ZIndex = 11
 scrollContainer.Parent = listFrame
 
 local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 4)
+listLayout.Padding = UDim.new(0, 6)
 listLayout.SortOrder = Enum.SortOrder.Name
 listLayout.Parent = scrollContainer
 
@@ -285,7 +355,7 @@ local function applyHighlight(player, roleText, roleColor)
             existingHighlight.Name = "RoleHighlight"
             existingHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
             existingHighlight.FillTransparency = 0.5
-            existingHighlight.OutlineTransparency = 0
+            existingHighlight.OutlineTransparency = 0.05
             existingHighlight.Parent = char
         end
         existingHighlight.FillColor = roleColor
@@ -313,36 +383,42 @@ local function updatePlayerList()
         -- Update UI List Row
         local rowFrame = Instance.new("Frame")
         rowFrame.Name = p.Name
-        rowFrame.Size = UDim2.new(1, -6, 0, 22)
-        rowFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        rowFrame.Size = UDim2.new(1, -4, 0, 28)
+        rowFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 34)
+        rowFrame.BackgroundTransparency = 0.35
         rowFrame.BorderSizePixel = 0
         rowFrame.ZIndex = 12
 
         local rowCorner = Instance.new("UICorner")
-        rowCorner.CornerRadius = UDim.new(0, 4)
+        rowCorner.CornerRadius = UDim.new(0, 8)
         rowCorner.Parent = rowFrame
+        
+        local rowStroke = Instance.new("UIStroke")
+        rowStroke.Color = Color3.fromRGB(255, 255, 255)
+        rowStroke.Transparency = 0.88
+        rowStroke.Parent = rowFrame
 
         local pNameLabel = Instance.new("TextLabel")
         pNameLabel.Size = UDim2.new(0.6, 0, 1, 0)
-        pNameLabel.Position = UDim2.new(0, 5, 0, 0)
+        pNameLabel.Position = UDim2.new(0, 10, 0, 0)
         pNameLabel.BackgroundTransparency = 1
         pNameLabel.Text = p.DisplayName
-        pNameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        pNameLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
         pNameLabel.TextXAlignment = Enum.TextXAlignment.Left
-        pNameLabel.Font = Enum.Font.SourceSans
-        pNameLabel.TextSize = 13
+        pNameLabel.Font = Enum.Font.GothamMedium
+        pNameLabel.TextSize = 12
         pNameLabel.ZIndex = 13
         pNameLabel.Parent = rowFrame
 
         local roleLabel = Instance.new("TextLabel")
-        roleLabel.Size = UDim2.new(0.4, -5, 1, 0)
+        roleLabel.Size = UDim2.new(0.4, -10, 1, 0)
         roleLabel.Position = UDim2.new(0.6, 0, 0, 0)
         roleLabel.BackgroundTransparency = 1
         roleLabel.Text = roleText
         roleLabel.TextColor3 = roleColor
         roleLabel.TextXAlignment = Enum.TextXAlignment.Right
-        roleLabel.Font = Enum.Font.SourceSansBold
-        roleLabel.TextSize = 13
+        roleLabel.Font = Enum.Font.GothamBold
+        roleLabel.TextSize = 12
         roleLabel.ZIndex = 13
         roleLabel.Parent = rowFrame
 
@@ -432,6 +508,65 @@ task.spawn(function()
     end
 end)
 
+-- Helper function to check if a character part is visible on screen (In FOV & Line of Sight)
+local function isVisibleToPlayer(targetPart)
+    local char = localPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+    
+    local myPos = char.HumanoidRootPart.Position
+    local targetPos = targetPart.Position
+    if (targetPos - myPos).Magnitude > 60 then
+        return false
+    end
+    
+    local _, onScreen = camera:WorldToViewportPoint(targetPos)
+    if not onScreen then
+        return false
+    end
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {char, targetPart.Parent}
+    raycastParams.IgnoreWater = true
+    
+    local rayResult = workspace:Raycast(camera.CFrame.Position, targetPos - camera.CFrame.Position, raycastParams)
+    if rayResult then
+        return false
+    end
+    
+    return true
+end
+
+-- Anti-Murder logic loop (Triggers when Murder is within 20 studs AND visible)
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if isAntiMurderActive then
+            local myChar = localPlayer.Character
+            if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                local myHRP = myChar.HumanoidRootPart
+                local myPos = myHRP.Position
+                
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= localPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        local role, _ = getPlayerRole(p)
+                        if role == "Murder" then
+                            local targetPart = p.Character:FindFirstChild("HumanoidRootPart")
+                            local dist = (targetPart.Position - myPos).Magnitude
+                            
+                            if dist <= 20 and isVisibleToPlayer(targetPart) then
+                                myHRP.CFrame = myHRP.CFrame * CFrame.new(0, 100, 0)
+                                task.wait(2)
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
 local function startTeleportSequence()
     if isTeleportRunning then return end
 
@@ -441,7 +576,7 @@ local function startTeleportSequence()
 
     isTeleportRunning = true
     startButton.Text = "Running..."
-    startButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+    startButton.BackgroundColor3 = Color3.fromRGB(120, 120, 135)
 
     if toolType == "None" then
         myHRP.CFrame = myHRP.CFrame * CFrame.new(0, 100, 0)
@@ -494,7 +629,7 @@ local function startTeleportSequence()
 
     isTeleportRunning = false
     startButton.Text = "Start TP Loop"
-    startButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+    startButton.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
 end
 
 ---------------------------------------------------------
@@ -503,13 +638,13 @@ end
 local function updateButtonUI()
     if isFreecamActive then
         toggleButton.Text = "FREECAM: ON (ALT)"
-        toggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
         toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
         specFrame.Visible = true
     else
         toggleButton.Text = "FREECAM: OFF (ALT)"
-        toggleButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-        toggleButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
+        toggleButton.TextColor3 = Color3.fromRGB(210, 210, 215)
         specFrame.Visible = false
     end
 end
@@ -729,6 +864,17 @@ end
 ---------------------------------------------------------
 startButton.MouseButton1Click:Connect(startTeleportSequence)
 
+antiMurderBtn.MouseButton1Click:Connect(function()
+    isAntiMurderActive = not isAntiMurderActive
+    if isAntiMurderActive then
+        antiMurderBtn.Text = "Anti-Murder: ON"
+        antiMurderBtn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+    else
+        antiMurderBtn.Text = "Anti-Murder: OFF"
+        antiMurderBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    end
+end)
+
 prevBtn.MouseButton1Click:Connect(function()
     if isFreecamActive then
         setSpectateTarget(spectateIndex - 1)
@@ -779,9 +925,9 @@ end)
 
 closeButton.MouseButton1Click:Connect(function()
     isTeleportRunning = false
+    isAntiMurderActive = false
     disableFreecam()
     
-    -- Remove Highlights on GUI Close
     for _, p in ipairs(Players:GetPlayers()) do
         if p.Character and p.Character:FindFirstChild("RoleHighlight") then
             p.Character.RoleHighlight:Destroy()
