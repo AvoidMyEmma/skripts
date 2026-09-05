@@ -1,5 +1,5 @@
 -- LocalScript placed inside StarterPlayerScripts or executed via exploit
--- Nexo Hub Pro - Streamlined with Core Utilities
+-- Nexo Hub Pro - Animated Edition with Dynamic Visuals & Fully Configurable Keybinds
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
 local LogService = game:GetService("LogService")
+local TweenService = game:GetService("TweenService")
 
 -- Safely get LocalPlayer and PlayerGui for both studio and exploit environments
 local localPlayer = Players.LocalPlayer
@@ -20,12 +21,18 @@ local camera = workspace.CurrentCamera
 ---------------------------------------------------------
 -- CONFIGURATION SETTINGS (CONFIGURABLE VIA UI)
 ---------------------------------------------------------
-local CONFIG = {
+local DEFAULT_CONFIG = {
     ATTACK_DURATION = 1.0,
     CLICK_INTERVAL = 0.03,
     MOVE_SPEED = 50,
     LOOK_SENSITIVITY = 0.25,
-    TOGGLE_KEY = Enum.KeyCode.LeftAlt,
+    
+    -- Keybinds per module
+    KEY_TP_LOOP = Enum.KeyCode.T,
+    KEY_ANTI_MURDER = Enum.KeyCode.Y,
+    KEY_MURDER_KA = Enum.KeyCode.U,
+    KEY_SHERIFF_KA = Enum.KeyCode.I,
+    KEY_FREECAM = Enum.KeyCode.LeftAlt,
     
     -- Configurable Distances & Stats
     MURDER_KA_DISTANCE = 10,
@@ -37,6 +44,12 @@ local CONFIG = {
     GUI_TRANSPARENCY = 0.1,
     ELEMENT_TRANSPARENCY = 0.1,
 }
+
+-- Active CONFIG table that updates during runtime
+local CONFIG = {}
+for k, v in pairs(DEFAULT_CONFIG) do
+    CONFIG[k] = v
+end
 
 local ACTION_FREEZE = "FreecamFreezeMovement"
 
@@ -65,6 +78,7 @@ local targetPlayer = nil
 local renderConnection = nil
 local ghostCharacter = nil
 local isRightMouseDown = false
+local listeningForKeyConfig = nil
 
 ---------------------------------------------------------
 -- MAIN GUI CREATION
@@ -100,12 +114,36 @@ corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = mainFrame
 
 local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(120, 80, 255)
+mainStroke.Name = "AnimatedStroke"
 mainStroke.Transparency = 0.4
 mainStroke.Thickness = 1.5
 mainStroke.Parent = mainFrame
 
--- Title Bar with Gradient Accent
+local mainStrokeGradient = Instance.new("UIGradient")
+mainStrokeGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 200, 255))
+})
+mainStrokeGradient.Parent = mainStroke
+
+-- Animated Gradient Flow (Smooth shifting without size adjustments)
+task.spawn(function()
+    local offset = 0
+    while true do
+        offset = (offset + 0.01) % 1
+        mainStrokeGradient.Offset = Vector2.new(offset, 0)
+        
+        local tween1 = TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.1, Thickness = 2.2})
+        tween1:Play()
+        tween1.Completed:Wait()
+        local tween2 = TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6, Thickness = 1.2})
+        tween2:Play()
+        tween2.Completed:Wait()
+    end
+end)
+
+-- Title Bar with Gradient Shift
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
 titleLabel.Size = UDim2.new(1, -70, 0, 30)
@@ -122,11 +160,23 @@ titleLabel.Parent = mainFrame
 local titleGradient = Instance.new("UIGradient")
 titleGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 120, 255))
+    ColorSequenceKeypoint.new(0.3, Color3.fromRGB(200, 140, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+    ColorSequenceKeypoint.new(0.7, Color3.fromRGB(140, 200, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
 })
 titleGradient.Parent = titleLabel
 
--- Settings Button (Gear icon)
+task.spawn(function()
+    local offset = 0
+    while true do
+        offset = (offset + 0.012) % 1
+        titleGradient.Offset = Vector2.new(offset, 0)
+        RunService.RenderStepped:Wait()
+    end
+end)
+
+-- Settings Button
 local settingsButton = Instance.new("TextButton")
 settingsButton.Name = "SettingsButton"
 settingsButton.Size = UDim2.new(0, 25, 0, 25)
@@ -144,7 +194,13 @@ local settingsBtnCorner = Instance.new("UICorner")
 settingsBtnCorner.CornerRadius = UDim.new(0, 6)
 settingsBtnCorner.Parent = settingsButton
 
--- Global Close ("X") Button
+settingsButton.MouseEnter:Connect(function()
+    TweenService:Create(settingsButton, TweenInfo.new(0.2), {Rotation = 45, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+end)
+settingsButton.MouseLeave:Connect(function()
+    TweenService:Create(settingsButton, TweenInfo.new(0.2), {Rotation = 0, TextColor3 = Color3.fromRGB(200, 170, 255)}):Play()
+end)
+
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
 closeButton.Size = UDim2.new(0, 25, 0, 25)
@@ -157,7 +213,6 @@ closeButton.TextSize = 14
 closeButton.ZIndex = 11
 closeButton.Parent = mainFrame
 
--- Helper function to create module buttons easily
 local function createModuleButton(name, posY, defaultText)
     local btn = Instance.new("TextButton")
     btn.Name = name
@@ -181,16 +236,26 @@ local function createModuleButton(name, posY, defaultText)
     btnStroke.Transparency = 0.85
     btnStroke.Parent = btn
 
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY - 0.05}):Play()
+        TweenService:Create(btnStroke, TweenInfo.new(0.2), {Transparency = 0.3, Color = Color3.fromRGB(160, 120, 255)}):Play()
+    end)
+
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY}):Play()
+        TweenService:Create(btnStroke, TweenInfo.new(0.2), {Transparency = 0.85, Color = Color3.fromRGB(255, 255, 255)}):Play()
+    end)
+
     return btn
 end
 
 -- Module Buttons Stack
-local startButton = createModuleButton("StartButton", 35, "Start TP Loop")
+local startButton = createModuleButton("StartButton", 35, "Start TP Loop (T)")
 startButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
 
-local antiMurderBtn = createModuleButton("AntiMurderButton", 72, "Anti-Murder: OFF")
-local murderKAButton = createModuleButton("MurderKAButton", 109, "Murder KA: OFF")
-local sheriffKAButton = createModuleButton("SheriffKAButton", 146, "Sheriff KA: OFF")
+local antiMurderBtn = createModuleButton("AntiMurderButton", 72, "Anti-Murder: OFF (Y)")
+local murderKAButton = createModuleButton("MurderKAButton", 109, "Murder KA: OFF (U)")
+local sheriffKAButton = createModuleButton("SheriffKAButton", 146, "Sheriff KA: OFF (I)")
 local toggleButton   = createModuleButton("ToggleButton", 183, "FREECAM: OFF (ALT)")
 toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 
@@ -199,7 +264,7 @@ toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 ---------------------------------------------------------
 local settingsFrame = Instance.new("Frame")
 settingsFrame.Name = "SettingsFrame"
-settingsFrame.Size = UDim2.new(0, 420, 0, 360)
+settingsFrame.Size = UDim2.new(0, 420, 0, 410)
 settingsFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
 settingsFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
@@ -215,10 +280,26 @@ settingsCorner.CornerRadius = UDim.new(0, 10)
 settingsCorner.Parent = settingsFrame
 
 local settingsStroke = Instance.new("UIStroke")
-settingsStroke.Color = Color3.fromRGB(120, 80, 255)
 settingsStroke.Transparency = 0.4
 settingsStroke.Thickness = 1.5
 settingsStroke.Parent = settingsFrame
+
+local settingsStrokeGradient = Instance.new("UIGradient")
+settingsStrokeGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 200, 255))
+})
+settingsStrokeGradient.Parent = settingsStroke
+
+task.spawn(function()
+    local offset = 0
+    while true do
+        offset = (offset + 0.01) % 1
+        settingsStrokeGradient.Offset = Vector2.new(offset, 0)
+        RunService.RenderStepped:Wait()
+    end
+end)
 
 local settingsTitle = Instance.new("TextLabel")
 settingsTitle.Size = UDim2.new(1, -40, 0, 35)
@@ -245,12 +326,12 @@ settingsClose.Parent = settingsFrame
 
 -- Config Container (Left Side of Settings)
 local configContainer = Instance.new("ScrollingFrame")
-configContainer.Size = UDim2.new(0.45, -5, 1, -85)
+configContainer.Size = UDim2.new(0.45, -5, 1, -125)
 configContainer.Position = UDim2.new(0, 10, 0, 40)
 configContainer.BackgroundTransparency = 1
 configContainer.BorderSizePixel = 0
 configContainer.ScrollBarThickness = 4
-configContainer.CanvasSize = UDim2.new(0, 0, 0, 300)
+configContainer.CanvasSize = UDim2.new(0, 0, 0, 500)
 configContainer.ZIndex = 21
 configContainer.Parent = settingsFrame
 
@@ -259,7 +340,18 @@ configLayout.Padding = UDim.new(0, 6)
 configLayout.SortOrder = Enum.SortOrder.LayoutOrder
 configLayout.Parent = configContainer
 
-local function createConfigInput(nameText, defaultVal, callback)
+local settingTextBoxes = {}
+local keybindButtonRefs = {}
+
+local function updateButtonTexts()
+    startButton.Text = "Start TP Loop (" .. string.upper(CONFIG.KEY_TP_LOOP.Name) .. ")"
+    antiMurderBtn.Text = "Anti-Murder: " .. (isAntiMurderActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_ANTI_MURDER.Name) .. ")"
+    murderKAButton.Text = "Murder KA: " .. (isMurderKillAuraActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_MURDER_KA.Name) .. ")"
+    sheriffKAButton.Text = "Sheriff KA: " .. (isSheriffKillAuraActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_SHERIFF_KA.Name) .. ")"
+    toggleButton.Text = "FREECAM: " .. (isFreecamActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_FREECAM.Name) .. ")"
+end
+
+local function createConfigInput(configKey, nameText, defaultVal, callback)
     local row = Instance.new("Frame")
     row.Size = UDim2.new(1, 0, 0, 40)
     row.BackgroundTransparency = 1
@@ -292,17 +384,108 @@ local function createConfigInput(nameText, defaultVal, callback)
     boxCorner.CornerRadius = UDim.new(0, 6)
     boxCorner.Parent = box
 
+    settingTextBoxes[configKey] = box
+
     box.FocusLost:Connect(function()
         local num = tonumber(box.Text)
         if num then
             callback(num)
         else
-            box.Text = tostring(defaultVal)
+            box.Text = tostring(CONFIG[configKey])
         end
     end)
 
     row.Parent = configContainer
 end
+
+local function createKeybindInput(configKey, nameText)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 40)
+    row.BackgroundTransparency = 1
+    row.ZIndex = 22
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = nameText
+    label.TextColor3 = Color3.fromRGB(200, 200, 210)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 12
+    label.ZIndex = 22
+    label.Parent = row
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.5, 0, 0.8, 0)
+    btn.Position = UDim2.new(0.5, 0, 0.1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+    btn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    btn.TextColor3 = Color3.fromRGB(200, 170, 255)
+    btn.Text = CONFIG[configKey].Name
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 11
+    btn.ZIndex = 22
+    btn.Parent = row
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = btn
+
+    keybindButtonRefs[configKey] = btn
+
+    btn.MouseButton1Click:Connect(function()
+        if listeningForKeyConfig then return end
+        listeningForKeyConfig = configKey
+        btn.Text = "Press key..."
+        btn.TextColor3 = Color3.fromRGB(255, 200, 80)
+
+        local connection
+        connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                CONFIG[configKey] = input.KeyCode
+                btn.Text = input.KeyCode.Name
+                btn.TextColor3 = Color3.fromRGB(200, 170, 255)
+                listeningForKeyConfig = nil
+                updateButtonTexts()
+                connection:Disconnect()
+            end
+        end)
+    end)
+
+    row.Parent = configContainer
+end
+
+-- Reset Settings Button
+local resetSettingsBtn = Instance.new("TextButton")
+resetSettingsBtn.Size = UDim2.new(0.45, -5, 0, 32)
+resetSettingsBtn.Position = UDim2.new(0, 10, 1, -75)
+resetSettingsBtn.BackgroundColor3 = Color3.fromRGB(50, 25, 30)
+resetSettingsBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+resetSettingsBtn.Text = "↺ Reset Settings"
+resetSettingsBtn.TextColor3 = Color3.fromRGB(255, 120, 130)
+resetSettingsBtn.Font = Enum.Font.GothamBold
+resetSettingsBtn.TextSize = 12
+resetSettingsBtn.ZIndex = 21
+resetSettingsBtn.Parent = settingsFrame
+
+local resetCorner = Instance.new("UICorner")
+resetCorner.CornerRadius = UDim.new(0, 6)
+resetCorner.Parent = resetSettingsBtn
+
+local resetStroke = Instance.new("UIStroke")
+resetStroke.Color = Color3.fromRGB(255, 90, 110)
+resetStroke.Transparency = 0.6
+resetStroke.Parent = resetSettingsBtn
+
+resetSettingsBtn.MouseEnter:Connect(function()
+    TweenService:Create(resetSettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(70, 30, 40), BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY - 0.05}):Play()
+    TweenService:Create(resetStroke, TweenInfo.new(0.2), {Transparency = 0.2}):Play()
+end)
+
+resetSettingsBtn.MouseLeave:Connect(function()
+    TweenService:Create(resetSettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 25, 30), BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY}):Play()
+    TweenService:Create(resetStroke, TweenInfo.new(0.2), {Transparency = 0.6}):Play()
+end)
 
 -- Console Scrolling Frame for Logs
 local consoleScroll = Instance.new("ScrollingFrame")
@@ -405,15 +588,12 @@ local function processCommand(text)
 
         if moduleName == "antimurder" or moduleName == "am" then
             isAntiMurderActive = not isAntiMurderActive
-            antiMurderBtn.Text = "Anti-Murder: " .. (isAntiMurderActive and "ON" or "OFF")
             antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
         elseif moduleName == "murderka" or moduleName == "mka" then
             isMurderKillAuraActive = not isMurderKillAuraActive
-            murderKAButton.Text = "Murder KA: " .. (isMurderKillAuraActive and "ON" or "OFF")
             murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
         elseif moduleName == "sheriffka" or moduleName == "ska" then
             isSheriffKillAuraActive = not isSheriffKillAuraActive
-            sheriffKAButton.Text = "Sheriff KA: " .. (isSheriffKillAuraActive and "ON" or "OFF")
             sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
         elseif moduleName == "freecam" or moduleName == "fc" then
             if isFreecamActive then disableFreecam() else enableFreecam() end
@@ -422,6 +602,7 @@ local function processCommand(text)
         else
             logToConsole("Unknown module: " .. moduleName, Enum.MessageType.MessageError)
         end
+        updateButtonTexts()
 
     elseif cmd == "set" then
         local settingName = parts[2]
@@ -434,19 +615,24 @@ local function processCommand(text)
 
         if settingName == "murderka" or settingName == "mka" then
             CONFIG.MURDER_KA_DISTANCE = val
+            if settingTextBoxes["MURDER_KA_DISTANCE"] then settingTextBoxes["MURDER_KA_DISTANCE"].Text = tostring(val) end
         elseif settingName == "sheriffka" or settingName == "ska" then
             CONFIG.SHERIFF_KA_DISTANCE = val
+            if settingTextBoxes["SHERIFF_KA_DISTANCE"] then settingTextBoxes["SHERIFF_KA_DISTANCE"].Text = tostring(val) end
         elseif settingName == "antimurder" or settingName == "am" then
             CONFIG.ANTI_MURDER_DISTANCE = val
+            if settingTextBoxes["ANTI_MURDER_DISTANCE"] then settingTextBoxes["ANTI_MURDER_DISTANCE"].Text = tostring(val) end
         elseif settingName == "height" or settingName == "sky" then
             CONFIG.ANTI_MURDER_SKY_HEIGHT = val
+            if settingTextBoxes["ANTI_MURDER_SKY_HEIGHT"] then settingTextBoxes["ANTI_MURDER_SKY_HEIGHT"].Text = tostring(val) end
         elseif settingName == "speed" then
             CONFIG.MOVE_SPEED = val
+            if settingTextBoxes["MOVE_SPEED"] then settingTextBoxes["MOVE_SPEED"].Text = tostring(val) end
         elseif settingName == "gui_trans" then
             CONFIG.GUI_TRANSPARENCY = math.clamp(val, 0, 1)
             mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
             settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
-            logToConsole("Main GUI transparency set to: " .. CONFIG.GUI_TRANSPARENCY, Enum.MessageType.MessageInfo)
+            if settingTextBoxes["GUI_TRANSPARENCY"] then settingTextBoxes["GUI_TRANSPARENCY"].Text = tostring(CONFIG.GUI_TRANSPARENCY) end
         elseif settingName == "elem_trans" then
             CONFIG.ELEMENT_TRANSPARENCY = math.clamp(val, 0, 1)
             settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
@@ -456,13 +642,35 @@ local function processCommand(text)
             toggleButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
             consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
             commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-            logToConsole("Element transparency set to: " .. CONFIG.ELEMENT_TRANSPARENCY, Enum.MessageType.MessageInfo)
+            if settingTextBoxes["ELEMENT_TRANSPARENCY"] then settingTextBoxes["ELEMENT_TRANSPARENCY"].Text = tostring(CONFIG.ELEMENT_TRANSPARENCY) end
         else
             logToConsole("Unknown setting: " .. settingName, Enum.MessageType.MessageError)
         end
+    elseif cmd == "reset" then
+        for k, v in pairs(DEFAULT_CONFIG) do
+            CONFIG[k] = v
+            if settingTextBoxes[k] then
+                settingTextBoxes[k].Text = tostring(v)
+            end
+            if keybindButtonRefs[k] then
+                keybindButtonRefs[k].Text = v.Name
+            end
+        end
+        updateButtonTexts()
+        mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
+        settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
+        settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+        antiMurderBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+        murderKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+        sheriffKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+        toggleButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+        consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+        commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+        logToConsole("All settings reset to defaults via command.", Enum.MessageType.MessageInfo)
     elseif cmd == "help" then
         logToConsole("Commands: toggle [antimurder/murderka/sheriffka/freecam/tploop]", Enum.MessageType.MessageInfo)
         logToConsole("Commands: set [murderka/sheriffka/antimurder/height/speed/gui_trans/elem_trans] [val]", Enum.MessageType.MessageInfo)
+        logToConsole("Commands: reset", Enum.MessageType.MessageInfo)
     else
         logToConsole("Unknown command. Type 'help' for info.", Enum.MessageType.MessageError)
     end
@@ -475,8 +683,39 @@ commandInput.FocusLost:Connect(function(enterPressed)
     end
 end)
 
-settingsButton.MouseButton1Click:Connect(function() settingsFrame.Visible = not settingsFrame.Visible end)
+settingsButton.MouseButton1Click:Connect(function() 
+    settingsFrame.Visible = not settingsFrame.Visible
+    if settingsFrame.Visible then
+        settingsFrame.Size = UDim2.new(0, 0, 0, 0)
+        TweenService:Create(settingsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 420, 0, 410)}):Play()
+    end
+end)
 settingsClose.MouseButton1Click:Connect(function() settingsFrame.Visible = false end)
+
+-- Reset Button Click Event
+resetSettingsBtn.MouseButton1Click:Connect(function()
+    for k, v in pairs(DEFAULT_CONFIG) do
+        CONFIG[k] = v
+        if settingTextBoxes[k] then
+            settingTextBoxes[k].Text = tostring(v)
+        end
+        if keybindButtonRefs[k] then
+            keybindButtonRefs[k].Text = v.Name
+        end
+    end
+    updateButtonTexts()
+    mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
+    settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
+    settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    antiMurderBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    murderKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    sheriffKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    toggleButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+    
+    logToConsole("Settings successfully reset to factory defaults.", Enum.MessageType.MessageInfo)
+end)
 
 -- Spectate Bar
 local specFrame = Instance.new("Frame")
@@ -494,9 +733,25 @@ specCorner.CornerRadius = UDim.new(0, 10)
 specCorner.Parent = specFrame
 
 local specStroke = Instance.new("UIStroke")
-specStroke.Color = Color3.fromRGB(120, 80, 255)
 specStroke.Transparency = 0.4
 specStroke.Parent = specFrame
+
+local specStrokeGradient = Instance.new("UIGradient")
+specStrokeGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 200, 255))
+})
+specStrokeGradient.Parent = specStroke
+
+task.spawn(function()
+    local offset = 0
+    while true do
+        offset = (offset + 0.01) % 1
+        specStrokeGradient.Offset = Vector2.new(offset, 0)
+        RunService.RenderStepped:Wait()
+    end
+end)
 
 local prevBtn = Instance.new("TextButton")
 prevBtn.Size = UDim2.new(0, 40, 1, -10)
@@ -561,10 +816,33 @@ listCorner.CornerRadius = UDim.new(0, 10)
 listCorner.Parent = listFrame
 
 local listStroke = Instance.new("UIStroke")
-listStroke.Color = Color3.fromRGB(120, 80, 255)
+listStroke.Name = "AnimatedListStroke"
 listStroke.Transparency = 0.4
 listStroke.Thickness = 1.5
 listStroke.Parent = listFrame
+
+local listStrokeGradient = Instance.new("UIGradient")
+listStrokeGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 200, 255))
+})
+listStrokeGradient.Parent = listStroke
+
+task.spawn(function()
+    local offset = 0
+    while true do
+        offset = (offset + 0.01) % 1
+        listStrokeGradient.Offset = Vector2.new(offset, 0)
+        
+        local tween1 = TweenService:Create(listStroke, TweenInfo.new(2.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.15, Thickness = 2.0})
+        tween1:Play()
+        tween1.Completed:Wait()
+        local tween2 = TweenService:Create(listStroke, TweenInfo.new(2.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6, Thickness = 1.2})
+        tween2:Play()
+        tween2.Completed:Wait()
+    end
+end)
 
 local listTitle = Instance.new("TextLabel")
 listTitle.Name = "Header"
@@ -577,6 +855,23 @@ listTitle.Font = Enum.Font.GothamBold
 listTitle.TextSize = 14
 listTitle.ZIndex = 11
 listTitle.Parent = listFrame
+
+local listTitleGradient = Instance.new("UIGradient")
+listTitleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 120, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+})
+listTitleGradient.Parent = listTitle
+
+task.spawn(function()
+    local offset = 0
+    while true do
+        offset = (offset - 0.006) % 1
+        listTitleGradient.Offset = Vector2.new(offset, 0)
+        RunService.RenderStepped:Wait()
+    end
+end)
 
 local scrollContainer = Instance.new("ScrollingFrame")
 scrollContainer.Size = UDim2.new(1, -10, 1, -35)
@@ -597,19 +892,25 @@ listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     scrollContainer.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
 end)
 
--- Fill Settings Config Fields (Default Transparency set to 0.1)
-createConfigInput("Murder KA Dist:", CONFIG.MURDER_KA_DISTANCE, function(v) CONFIG.MURDER_KA_DISTANCE = v end)
-createConfigInput("Sheriff KA Dist:", CONFIG.SHERIFF_KA_DISTANCE, function(v) CONFIG.SHERIFF_KA_DISTANCE = v end)
-createConfigInput("Anti-Murder Dist:", CONFIG.ANTI_MURDER_DISTANCE, function(v) CONFIG.ANTI_MURDER_DISTANCE = v end)
-createConfigInput("Anti-Murder Height:", CONFIG.ANTI_MURDER_SKY_HEIGHT, function(v) CONFIG.ANTI_MURDER_SKY_HEIGHT = v end)
-createConfigInput("Freecam Speed:", CONFIG.MOVE_SPEED, function(v) CONFIG.MOVE_SPEED = v end)
-createConfigInput("GUI Transparency:", CONFIG.GUI_TRANSPARENCY, function(v) 
+-- Fill Settings Config Fields & Keybind Rebinders
+createKeybindInput("KEY_TP_LOOP", "TP Loop Key:")
+createKeybindInput("KEY_ANTI_MURDER", "Anti-Murder Key:")
+createKeybindInput("KEY_MURDER_KA", "Murder KA Key:")
+createKeybindInput("KEY_SHERIFF_KA", "Sheriff KA Key:")
+createKeybindInput("KEY_FREECAM", "Freecam Key:")
+
+createConfigInput("MURDER_KA_DISTANCE", "Murder KA Dist:", CONFIG.MURDER_KA_DISTANCE, function(v) CONFIG.MURDER_KA_DISTANCE = v end)
+createConfigInput("SHERIFF_KA_DISTANCE", "Sheriff KA Dist:", CONFIG.SHERIFF_KA_DISTANCE, function(v) CONFIG.SHERIFF_KA_DISTANCE = v end)
+createConfigInput("ANTI_MURDER_DISTANCE", "Anti-Murder Dist:", CONFIG.ANTI_MURDER_DISTANCE, function(v) CONFIG.ANTI_MURDER_DISTANCE = v end)
+createConfigInput("ANTI_MURDER_SKY_HEIGHT", "Anti-Murder Height:", CONFIG.ANTI_MURDER_SKY_HEIGHT, function(v) CONFIG.ANTI_MURDER_SKY_HEIGHT = v end)
+createConfigInput("MOVE_SPEED", "Freecam Speed:", CONFIG.MOVE_SPEED, function(v) CONFIG.MOVE_SPEED = v end)
+createConfigInput("GUI_TRANSPARENCY", "GUI Transparency:", CONFIG.GUI_TRANSPARENCY, function(v) 
     CONFIG.GUI_TRANSPARENCY = math.clamp(v, 0, 1)
     mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
     settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
     listFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
 end)
-createConfigInput("Elem Transparency:", CONFIG.ELEMENT_TRANSPARENCY, function(v)
+createConfigInput("ELEMENT_TRANSPARENCY", "Elem Transparency:", CONFIG.ELEMENT_TRANSPARENCY, function(v)
     CONFIG.ELEMENT_TRANSPARENCY = math.clamp(v, 0, 1)
     settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
     antiMurderBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
@@ -911,7 +1212,7 @@ function startTeleportSequence()
     local toolType = getEquippedToolType(myCharacter)
 
     isTeleportRunning = true
-    startButton.Text = "Running..."
+    startButton.Text = "Running... (" .. string.upper(CONFIG.KEY_TP_LOOP.Name) .. ")"
     startButton.BackgroundColor3 = Color3.fromRGB(30, 45, 40)
 
     if toolType == "None" then
@@ -945,7 +1246,7 @@ function startTeleportSequence()
     end
 
     isTeleportRunning = false
-    startButton.Text = "Start TP Loop"
+    updateButtonTexts()
     startButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
 end
 
@@ -954,16 +1255,15 @@ end
 ---------------------------------------------------------
 local function updateButtonUI()
     if isFreecamActive then
-        toggleButton.Text = "FREECAM: ON (ALT)"
         toggleButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
         toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
         specFrame.Visible = true
     else
-        toggleButton.Text = "FREECAM: OFF (ALT)"
         toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
         toggleButton.TextColor3 = Color3.fromRGB(200, 200, 210)
         specFrame.Visible = false
     end
+    updateButtonTexts()
 end
 
 local function getSpectateTargets()
@@ -1128,34 +1428,57 @@ end
 ---------------------------------------------------------
 -- UI CONNECTIONS & EVENTS
 ---------------------------------------------------------
-startButton.MouseButton1Click:Connect(function() task.spawn(startTeleportSequence) end)
+startButton.MouseButton1Click:Connect(function()
+    if not isTeleportRunning then task.spawn(startTeleportSequence) else isTeleportRunning = false end
+end)
+
 antiMurderBtn.MouseButton1Click:Connect(function()
     isAntiMurderActive = not isAntiMurderActive
-    antiMurderBtn.Text = "Anti-Murder: " .. (isAntiMurderActive and "ON" or "OFF")
     antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+    updateButtonTexts()
 end)
+
 murderKAButton.MouseButton1Click:Connect(function()
     isMurderKillAuraActive = not isMurderKillAuraActive
-    murderKAButton.Text = "Murder KA: " .. (isMurderKillAuraActive and "ON" or "OFF")
     murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+    updateButtonTexts()
 end)
+
 sheriffKAButton.MouseButton1Click:Connect(function()
     isSheriffKillAuraActive = not isSheriffKillAuraActive
-    sheriffKAButton.Text = "Sheriff KA: " .. (isSheriffKillAuraActive and "ON" or "OFF")
     sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+    updateButtonTexts()
 end)
 
 prevBtn.MouseButton1Click:Connect(function() if isFreecamActive then setSpectateTarget(spectateIndex - 1) end end)
 nextBtn.MouseButton1Click:Connect(function() if isFreecamActive then setSpectateTarget(spectateIndex + 1) end end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if listeningForKeyConfig then return end
+    
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         isRightMouseDown = true
         if isFreecamActive then UserInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition end
     elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
         if isFreecamActive then teleportToFreecam() end
-    elseif input.KeyCode == CONFIG.TOGGLE_KEY and not gameProcessed then
-        if isFreecamActive then disableFreecam() else enableFreecam() end
+    elseif input.UserInputType == Enum.UserInputType.Keyboard and not gameProcessed then
+        if input.KeyCode == CONFIG.KEY_TP_LOOP then
+            if not isTeleportRunning then task.spawn(startTeleportSequence) else isTeleportRunning = false end
+        elseif input.KeyCode == CONFIG.KEY_ANTI_MURDER then
+            isAntiMurderActive = not isAntiMurderActive
+            antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+            updateButtonTexts()
+        elseif input.KeyCode == CONFIG.KEY_MURDER_KA then
+            isMurderKillAuraActive = not isMurderKillAuraActive
+            murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+            updateButtonTexts()
+        elseif input.KeyCode == CONFIG.KEY_SHERIFF_KA then
+            isSheriffKillAuraActive = not isSheriffKillAuraActive
+            sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+            updateButtonTexts()
+        elseif input.KeyCode == CONFIG.KEY_FREECAM then
+            if isFreecamActive then disableFreecam() else enableFreecam() end
+        end
     end
 end)
 
