@@ -1,0 +1,263 @@
+-- LocalScript inside StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+
+-- Configurable settings
+local ATTACK_DURATION = 1.0 -- Time (in seconds) spent attached to each player
+local CLICK_INTERVAL = 0.03 -- Delay between clicks while attached
+
+-- 1. Create the ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TeleportGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- 2. Create Main Container Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 200, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -100, 0.4, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = mainFrame
+
+-- 3. Create Title Bar
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Size = UDim2.new(1, -30, 0, 30)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Player TP Loop"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 14
+titleLabel.Parent = mainFrame
+
+-- 4. Create Close ("X") Button
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 25, 0, 25)
+closeButton.Position = UDim2.new(1, -28, 0, 3)
+closeButton.BackgroundTransparency = 1
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 85, 85)
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 16
+closeButton.Parent = mainFrame
+
+-- 5. Create Start Button
+local startButton = Instance.new("TextButton")
+startButton.Name = "StartButton"
+startButton.Size = UDim2.new(0.8, 0, 0, 35)
+startButton.Position = UDim2.new(0.1, 0, 0.5, 0)
+startButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+startButton.Text = "Start"
+startButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+startButton.Font = Enum.Font.SourceSansBold
+startButton.TextSize = 16
+startButton.Parent = mainFrame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 6)
+btnCorner.Parent = startButton
+
+---------------------------------------------------------
+-- LOGIC & EVENTS
+---------------------------------------------------------
+
+local isRunning = false
+local isAttacking = false
+
+-- Function to check what valid item you currently have EQUIPPED
+local function getEquippedToolType(character)
+    if not character then return "None" end
+    
+    for _, child in ipairs(character:GetChildren()) do
+        if child:IsA("Tool") then
+            local name = string.lower(child.Name)
+            if name == "gun" then
+                return "Gun"
+            elseif name == "knife" or name == "kinfe" then
+                return "Knife"
+            end
+        end
+    end
+    
+    return "None"
+end
+
+-- Checks if a target player has a Knife either equipped OR in their Backpack inventory
+local function hasKnife(player)
+    if player.Character then
+        for _, child in ipairs(player.Character:GetChildren()) do
+            if child:IsA("Tool") then
+                local name = string.lower(child.Name)
+                if name == "knife" or name == "kinfe" then
+                    return true
+                end
+            end
+        end
+    end
+
+    local backpack = player:FindFirstChild("Backpack")
+    if backpack then
+        for _, child in ipairs(backpack:GetChildren()) do
+            if child:IsA("Tool") then
+                local name = string.lower(child.Name)
+                if name == "knife" or name == "kinfe" then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+-- Function to simulate a virtual left mouse click
+local function simulateLeftClick()
+    local viewport = workspace.CurrentCamera.ViewportSize
+    local centerX = viewport.X / 2
+    local centerY = viewport.Y / 2
+    
+    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
+    task.wait(0.01)
+    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
+end
+
+-- Background loop: Keeps character running around randomly whenever not actively attacking
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if isRunning and not isAttacking then
+            local character = LocalPlayer.Character
+            if character then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+                if humanoid and hrp then
+                    local randomOffset = Vector3.new(
+                        math.random(-30, 30),
+                        0,
+                        math.random(-30, 30)
+                    )
+                    humanoid:MoveTo(hrp.Position + randomOffset)
+                end
+            end
+        end
+    end
+end)
+
+-- Teleport Logic Loop
+local function startTeleportSequence()
+    if isRunning then return end
+
+    local myCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local myHRP = myCharacter:WaitForChild("HumanoidRootPart")
+    local toolType = getEquippedToolType(myCharacter)
+
+    isRunning = true
+    startButton.Text = "Running..."
+    startButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+
+    if toolType == "None" then
+        -- NO ITEM EQUIPPED: TP 100 studs up once
+        myHRP.CFrame = myHRP.CFrame * CFrame.new(0, 100, 0)
+        task.wait(5)
+    else
+        -- ITEM EQUIPPED: Single-pass player execution
+        local playerList = Players:GetPlayers()
+        local visitedPlayers = {}
+
+        for _, targetPlayer in ipairs(playerList) do
+            local currentTool = getEquippedToolType(myCharacter)
+            if currentTool == "None" or not isRunning then
+                break
+            end
+
+            if targetPlayer ~= LocalPlayer and not visitedPlayers[targetPlayer] then
+                visitedPlayers[targetPlayer] = true -- Lock player so they are NEVER checked again
+
+                local shouldTarget = true
+                if currentTool == "Gun" then
+                    shouldTarget = hasKnife(targetPlayer)
+                end
+
+                if shouldTarget then
+                    local targetChar = targetPlayer.Character
+                    if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+                        local targetHRP = targetChar.HumanoidRootPart
+                        
+                        isAttacking = true
+                        
+                        -- Track render connection to continuously teleport frame-by-frame
+                        local tpConnection
+                        tpConnection = RunService.RenderStepped:Connect(function()
+                            if isRunning and targetChar and targetHRP and targetHRP.Parent then
+                                if currentTool == "Gun" then
+                                    myHRP.CFrame = targetHRP.CFrame
+                                elseif currentTool == "Knife" then
+                                    myHRP.CFrame = CFrame.new(targetHRP.Position)
+                                end
+                            else
+                                if tpConnection then
+                                    tpConnection:Disconnect()
+                                end
+                            end
+                        end)
+
+                        -- Separate thread for continuous clicking while teleporting
+                        local clickThread = task.spawn(function()
+                            while isRunning and isAttacking do
+                                local liveTool = getEquippedToolType(myCharacter)
+                                if liveTool == "None" then break end
+                                simulateLeftClick()
+                                task.wait(CLICK_INTERVAL)
+                            end
+                        end)
+
+                        -- Hold attachment for ATTACK_DURATION seconds
+                        local startTime = os.clock()
+                        while isRunning and (os.clock() - startTime < ATTACK_DURATION) do
+                            local liveTool = getEquippedToolType(myCharacter)
+                            if liveTool == "None" then break end
+                            task.wait()
+                        end
+
+                        -- Clean up frame attachment and click thread before moving to next target
+                        if tpConnection then
+                            tpConnection:Disconnect()
+                        end
+                        task.cancel(clickThread)
+                        
+                        isAttacking = false
+                    end
+                end
+            end
+        end
+    end
+
+    -- Reset UI state
+    isAttacking = false
+    isRunning = false
+    startButton.Text = "Start"
+    startButton.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+end
+
+-- Connect Buttons
+startButton.MouseButton1Click:Connect(startTeleportSequence)
+
+closeButton.MouseButton1Click:Connect(function()
+    isAttacking = false
+    isRunning = false
+    screenGui:Destroy()
+end)
