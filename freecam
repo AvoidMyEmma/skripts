@@ -140,7 +140,6 @@ nameLabel.Text = "Spectating: None"
 nameLabel.ZIndex = 11
 nameLabel.Parent = specFrame
 
--- Parent ScreenGui after building hierarchy
 screenGui.Parent = playerGui
 
 local function updateButtonUI()
@@ -157,7 +156,6 @@ local function updateButtonUI()
     end
 end
 
--- Get valid target player list
 local function getSpectateTargets()
     local targets = {}
     for _, p in ipairs(Players:GetPlayers()) do
@@ -210,7 +208,6 @@ local function sinkInput()
     return Enum.ContextActionResult.Sink
 end
 
--- Helper to completely stop the player's movement
 local function freezeCharacterMovement()
     local character = localPlayer.Character
     if not character then return end
@@ -227,49 +224,57 @@ local function freezeCharacterMovement()
     end
 end
 
+local function restoreCameraToPlayer()
+    local character = localPlayer.Character
+    if not character then return end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+
+    if humanoid then
+        -- Force-reset CameraSubject and bounce through Track to break Scriptable overrides
+        camera.CameraType = Enum.CameraType.Track
+        camera.CameraSubject = humanoid
+        
+        if hrp then
+            camera.CFrame = hrp.CFrame * CFrame.new(0, 2, 8)
+        end
+
+        task.defer(function()
+            camera.CameraType = Enum.CameraType.Custom
+            camera.CameraSubject = humanoid
+        end)
+    end
+end
+
 local function disableFreecam()
     isFreecamActive = false
     isSpectating = false
     isRightMouseDown = false
     targetPlayer = nil
 
-    ContextActionService:UnbindAction(ACTION_FREEZE)
-
     if renderConnection then
         renderConnection:Disconnect()
         renderConnection = nil
     end
+
+    ContextActionService:UnbindAction(ACTION_FREEZE)
 
     if ghostCharacter then
         ghostCharacter:Destroy()
         ghostCharacter = nil
     end
 
-    local realCharacter = localPlayer.Character
-    if realCharacter then
-        local humanoid = realCharacter:FindFirstChildOfClass("Humanoid")
-        local hrp = realCharacter:FindFirstChild("HumanoidRootPart")
-        
-        if hrp then
-            camera.CFrame = hrp.CFrame * CFrame.new(0, 2, 8)
-        end
-        if humanoid then
-            camera.CameraSubject = humanoid
-        end
-    end
-
-    camera.CameraType = Enum.CameraType.Custom
+    restoreCameraToPlayer()
     UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 
     updateButtonUI()
 end
 
--- Teleport Character Safely to Freecam Target
 local function teleportToFreecam()
     if not isFreecamActive then return end
 
     local targetCFrame = camera.CFrame
-
     local character = localPlayer.Character
     if character then
         local hrp = character:FindFirstChild("HumanoidRootPart")
@@ -294,10 +299,8 @@ local function enableFreecam()
 
     updateButtonUI()
 
-    -- Halt any existing movement velocity immediately
     freezeCharacterMovement()
 
-    -- Bind movement inputs to sink them from character control
     ContextActionService:BindActionAtPriority(
         ACTION_FREEZE,
         sinkInput,
@@ -325,7 +328,6 @@ local function enableFreecam()
     renderConnection = RunService.RenderStepped:Connect(function(deltaTime)
         if not isFreecamActive then return end
 
-        -- Keep character still while freecam is active
         freezeCharacterMovement()
 
         if isRightMouseDown then
@@ -366,7 +368,6 @@ local function enableFreecam()
     end)
 end
 
--- Spectate Arrows Listeners
 prevBtn.MouseButton1Click:Connect(function()
     if isFreecamActive then
         setSpectateTarget(spectateIndex - 1)
@@ -379,7 +380,6 @@ nextBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Input Listeners
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         isRightMouseDown = true
