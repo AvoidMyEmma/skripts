@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
 local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -15,6 +16,7 @@ local camera = workspace.CurrentCamera
 local Config = {
     AttackDuration = 1.0,
     ClickInterval = 0.05,
+    TpDelay = 0.01,                 -- Delay between teleport steps
     MoveSpeed = 60,
     LookSensitivity = 0.25,
     ToggleKey = Enum.KeyCode.LeftAlt,
@@ -35,6 +37,33 @@ local isSheriffKillAuraActive = false
 local COLOR_INNOCENT = Color3.fromRGB(46, 213, 115)  
 local COLOR_SHERIFF  = Color3.fromRGB(52, 152, 219)  
 local COLOR_MURDER   = Color3.fromRGB(255, 71, 87)   
+
+---------------------------------------------------------
+-- VERSION CHECKER SYSTEM
+---------------------------------------------------------
+-- NOTE: Update this string with your current code contents for accurate checking
+local currentScriptCode = [[
+-- PASTE YOUR CODE CONTENTS HERE FOR AUTO-UPDATE CHECKING
+]]
+
+task.spawn(function()
+    local url = "https://raw.githubusercontent.com/AvoidMyEmma/skripts/main/mm2.txt"
+    while true do
+        task.wait(1)
+        local success, remoteCode = pcall(function()
+            return game:HttpGet(url)
+        end)
+        
+        if success and remoteCode then
+            local cleanRemote = remoteCode:gsub("%s+$", "")
+            local cleanCurrent = currentScriptCode:gsub("%s+$", "")
+            
+            if cleanRemote ~= cleanCurrent then
+                warn("NEW VERSION AVALIBLE RECOMMENT TO UPDATE TO FIX BUGS AND GET NEW FEATURES")
+            end
+        end
+    end
+end)
 
 ---------------------------------------------------------
 -- INTERNAL STATE
@@ -346,7 +375,7 @@ createNexusUI = function()
     -- 2. Settings Panel Window with Tabs (General Settings & Developer Settings)
     settingsFrame = Instance.new("Frame")
     settingsFrame.Name = "SettingsFrame"
-    settingsFrame.Size = UDim2.new(0, 260, 0, 230)
+    settingsFrame.Size = UDim2.new(0, 260, 0, 260)
     settingsFrame.Position = UDim2.new(0.02, 255, 0.3, 0)
     settingsFrame.Visible = false
     settingsFrame.ZIndex = 20
@@ -398,20 +427,20 @@ createNexusUI = function()
     generalContent.Parent = settingsFrame
 
     local rangeLabel = Instance.new("TextLabel")
-    rangeLabel.Size = UDim2.new(1, -24, 0, 25)
-    rangeLabel.Position = UDim2.new(0, 12, 0, 10)
+    rangeLabel.Size = UDim2.new(1, -24, 0, 20)
+    rangeLabel.Position = UDim2.new(0, 12, 0, 5)
     rangeLabel.BackgroundTransparency = 1
     rangeLabel.Text = "Aura/Aim Range: " .. Config.KillAuraDistance .. " Studs"
     rangeLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
     rangeLabel.Font = Enum.Font.GothamMedium
-    rangeLabel.TextSize = 12
+    rangeLabel.TextSize = 11
     rangeLabel.TextXAlignment = Enum.TextXAlignment.Left
     rangeLabel.ZIndex = 22
     rangeLabel.Parent = generalContent
 
     local rangeToggleBtn = Instance.new("TextButton")
-    rangeToggleBtn.Size = UDim2.new(0.9, 0, 0, 32)
-    rangeToggleBtn.Position = UDim2.new(0.05, 0, 0, 38)
+    rangeToggleBtn.Size = UDim2.new(0.9, 0, 0, 28)
+    rangeToggleBtn.Position = UDim2.new(0.05, 0, 0, 28)
     rangeToggleBtn.Text = "Toggle Range (10 / 25)"
     rangeToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     rangeToggleBtn.Font = Enum.Font.GothamBold
@@ -430,6 +459,41 @@ createNexusUI = function()
             rangeLabel.Text = "Aura/Aim Range: 10 Studs"
             logMessage("Range changed to 10 studs", "Info")
         end
+    end)
+
+    local delayLabel = Instance.new("TextLabel")
+    delayLabel.Size = UDim2.new(1, -24, 0, 20)
+    delayLabel.Position = UDim2.new(0, 12, 0, 64)
+    delayLabel.BackgroundTransparency = 1
+    delayLabel.Text = "TP Loop Delay: " .. string.format("%.2f", Config.TpDelay) .. "s"
+    delayLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+    delayLabel.Font = Enum.Font.GothamMedium
+    delayLabel.TextSize = 11
+    delayLabel.TextXAlignment = Enum.TextXAlignment.Left
+    delayLabel.ZIndex = 22
+    delayLabel.Parent = generalContent
+
+    local delayToggleBtn = Instance.new("TextButton")
+    delayToggleBtn.Size = UDim2.new(0.9, 0, 0, 28)
+    delayToggleBtn.Position = UDim2.new(0.05, 0, 0, 87)
+    delayToggleBtn.Text = "Cycle TP Delay (0.01s / 0.05s / 0.1s)"
+    delayToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    delayToggleBtn.Font = Enum.Font.GothamBold
+    delayToggleBtn.TextSize = 10
+    delayToggleBtn.ZIndex = 22
+    delayToggleBtn.Parent = generalContent
+    applyInteractiveButton(delayToggleBtn, Color3.fromRGB(55, 55, 75), Color3.fromRGB(46, 204, 113), function() return Config.TpDelay ~= 0.01 end)
+
+    delayToggleBtn.MouseButton1Click:Connect(function()
+        if Config.TpDelay == 0.01 then
+            Config.TpDelay = 0.05
+        elseif Config.TpDelay == 0.05 then
+            Config.TpDelay = 0.1
+        else
+            Config.TpDelay = 0.01
+        end
+        delayLabel.Text = "TP Loop Delay: " .. string.format("%.2f", Config.TpDelay) .. "s"
+        logMessage("TP Loop delay updated to " .. string.format("%.2f", Config.TpDelay) .. "s", "Info")
     end)
 
     -- Developer Content Container
@@ -1076,11 +1140,9 @@ task.spawn(function()
                                             task.wait(0.02)
                                         end
 
-                                        -- Aim camera/character directly at murderer's head/torso
                                         local cam = workspace.CurrentCamera
                                         local targetPosition = targetPart.Position
                                         
-                                        -- Direct look at the target position
                                         cam.CFrame = CFrame.new(cam.CFrame.Position, targetPosition)
                                         
                                         pcall(function()
@@ -1177,7 +1239,12 @@ startTeleportSequence = function()
                                 lastClick = os.clock()
                             end
 
-                            RunService.Heartbeat:Wait()
+                            -- Respect Config.TpDelay between steps
+                            if Config.TpDelay > 0 then
+                                task.wait(Config.TpDelay)
+                            else
+                                RunService.Heartbeat:Wait()
+                            end
                         end
                     end
                 end
