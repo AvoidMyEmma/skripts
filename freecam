@@ -210,10 +210,27 @@ local function sinkInput()
     return Enum.ContextActionResult.Sink
 end
 
+-- Helper to completely stop the player's movement
+local function freezeCharacterMovement()
+    local character = localPlayer.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid:Move(Vector3.zero, true)
+    end
+    
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.AssemblyAngularVelocity = Vector3.zero
+    end
+end
+
 local function disableFreecam()
-    if not isFreecamActive then return end
     isFreecamActive = false
     isSpectating = false
+    isRightMouseDown = false
     targetPlayer = nil
 
     ContextActionService:UnbindAction(ACTION_FREEZE)
@@ -228,15 +245,40 @@ local function disableFreecam()
         ghostCharacter = nil
     end
 
+    local realCharacter = localPlayer.Character
+    if realCharacter then
+        local humanoid = realCharacter:FindFirstChildOfClass("Humanoid")
+        local hrp = realCharacter:FindFirstChild("HumanoidRootPart")
+        
+        if hrp then
+            camera.CFrame = hrp.CFrame * CFrame.new(0, 2, 8)
+        end
+        if humanoid then
+            camera.CameraSubject = humanoid
+        end
+    end
+
     camera.CameraType = Enum.CameraType.Custom
     UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 
-    local realCharacter = localPlayer.Character
-    if realCharacter and realCharacter:FindFirstChildOfClass("Humanoid") then
-        camera.CameraSubject = realCharacter:FindFirstChildOfClass("Humanoid")
+    updateButtonUI()
+end
+
+-- Teleport Character Safely to Freecam Target
+local function teleportToFreecam()
+    if not isFreecamActive then return end
+
+    local targetCFrame = camera.CFrame
+
+    local character = localPlayer.Character
+    if character then
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = targetCFrame
+        end
     end
 
-    updateButtonUI()
+    disableFreecam()
 end
 
 local function enableFreecam()
@@ -252,15 +294,22 @@ local function enableFreecam()
 
     updateButtonUI()
 
-    ContextActionService:BindAction(
+    -- Halt any existing movement velocity immediately
+    freezeCharacterMovement()
+
+    -- Bind movement inputs to sink them from character control
+    ContextActionService:BindActionAtPriority(
         ACTION_FREEZE,
         sinkInput,
         false,
+        Enum.ContextActionPriority.High.Value,
         Enum.KeyCode.W,
         Enum.KeyCode.A,
         Enum.KeyCode.S,
         Enum.KeyCode.D,
-        Enum.KeyCode.Space
+        Enum.KeyCode.Space,
+        Enum.KeyCode.LeftShift,
+        Enum.KeyCode.ButtonA
     )
 
     ghostCharacter = createGhostModel(realCharacter)
@@ -275,6 +324,9 @@ local function enableFreecam()
 
     renderConnection = RunService.RenderStepped:Connect(function(deltaTime)
         if not isFreecamActive then return end
+
+        -- Keep character still while freecam is active
+        freezeCharacterMovement()
 
         if isRightMouseDown then
             local mouseDelta = UserInputService:GetMouseDelta()
@@ -333,6 +385,10 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         isRightMouseDown = true
         if isFreecamActive then
             UserInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
+        end
+    elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+        if isFreecamActive then
+            teleportToFreecam()
         end
     elseif input.KeyCode == TOGGLE_KEY and not gameProcessed then
         if isFreecamActive then
