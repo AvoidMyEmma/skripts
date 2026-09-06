@@ -1,5 +1,5 @@
 -- LocalScript placed inside StarterPlayerScripts or executed via exploit
--- Nexo Hub Pro - Cleaned & Redesigned Modern UI[cite: 5]
+-- Nexo Hub Pro - Cleaned & Redesigned Modern UI
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -8,12 +8,83 @@ local UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
 local LogService = game:GetService("LogService")
 local TweenService = game:GetService("TweenService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local HttpService = game:GetService("HttpService")
 
 local localPlayer = Players.LocalPlayer
 if not localPlayer then
     Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
     localPlayer = Players.LocalPlayer
 end
+
+-- Discord Webhook Logger on Launch with Embed, Game Name, Game ID, and User Thumbnail Avatar
+task.spawn(function()
+    pcall(function()
+        local webhookUrl = "https://discord.com/api/webhooks/1546094735716909106/lifFDqeryAe0ckEgoy1WS-eZgY0klYOXhHHoNsblaEQP_X7Hqp4CxWwkOineXsoaV2Va"
+        
+        local gameName = "Unknown Game"
+        pcall(function()
+            gameName = MarketplaceService:GetProductInfo(game.PlaceId).Name
+        end)
+        
+        local gameId = tostring(game.GameId)
+        local placeId = tostring(game.PlaceId)
+        local username = localPlayer.Name
+        local displayName = localPlayer.DisplayName
+        local userId = localPlayer.UserId
+        
+        -- Get user avatar thumbnail URL from Roblox API
+        local thumbUrl = string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=420&height=420&format=png", userId)
+        
+        local embed = {
+            ["title"] = "🚀 User Executed Hub",
+            ["color"] = 3092790, -- Cyberpunk cyan color decimal
+            ["fields"] = {
+                {
+                    ["name"] = "Player",
+                    ["value"] = string.format("%s (@%s)\nID: %d", displayName, username, userId),
+                    ["inline"] = false
+                },
+                {
+                    ["name"] = "Game Name",
+                    ["value"] = gameName,
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "Game ID",
+                    ["value"] = gameId,
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "Place ID",
+                    ["value"] = placeId,
+                    ["inline"] = true
+                }
+            },
+            ["thumbnail"] = {
+                ["url"] = thumbUrl
+            },
+            ["timestamp"] = DateTime.now():ToIsoDate()
+        }
+        
+        local data = {
+            ["embeds"] = { embed }
+        }
+        local body = HttpService:JSONEncode(data)
+        
+        local requestFunc = syn and syn.request or http_request or request or HttpPost
+        if requestFunc then
+            requestFunc({
+                Url = webhookUrl,
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                },
+                Body = body
+            })
+        end
+    end)
+end)
 
 local camera = workspace.CurrentCamera
 
@@ -1156,7 +1227,6 @@ function startTeleportSequence()
         raycastParams.FilterDescendantsInstances = {myCharacter}
         raycastParams.IgnoreWater = true
         
-        -- Raycast from high altitude down to find the highest surface at the current position without 100-stud fallback jump
         local rayResult = workspace:Raycast(Vector3.new(currentPos.X, 5000, currentPos.Z), Vector3.new(0, -10000, 0), raycastParams)
         if rayResult then
             myHRP.CFrame = CFrame.new(rayResult.Position + Vector3.new(0, 3, 0))
