@@ -1,5 +1,5 @@
 -- LocalScript placed inside StarterPlayerScripts or executed via exploit
--- Nexo Hub Pro - Animated Edition with Dynamic Visuals & Fully Configurable Keybinds[cite: 1]
+-- Nexo Hub Pro - Cleaned & Redesigned Modern UI[cite: 5]
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -9,7 +9,6 @@ local ContextActionService = game:GetService("ContextActionService")
 local LogService = game:GetService("LogService")
 local TweenService = game:GetService("TweenService")
 
--- Safely get LocalPlayer and PlayerGui for both studio and exploit environments[cite: 1]
 local localPlayer = Players.LocalPlayer
 if not localPlayer then
     Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
@@ -19,7 +18,7 @@ end
 local camera = workspace.CurrentCamera
 
 ---------------------------------------------------------
--- CONFIGURATION SETTINGS (CONFIGURABLE VIA UI)[cite: 1]
+-- CONFIGURATION SETTINGS
 ---------------------------------------------------------
 local DEFAULT_CONFIG = {
     ATTACK_DURATION = 1.0,
@@ -27,25 +26,21 @@ local DEFAULT_CONFIG = {
     MOVE_SPEED = 50,
     LOOK_SENSITIVITY = 0.25,
     
-    -- Keybinds per module[cite: 1]
     KEY_TP_LOOP = Enum.KeyCode.T,
     KEY_ANTI_MURDER = Enum.KeyCode.Y,
     KEY_MURDER_KA = Enum.KeyCode.U,
     KEY_SHERIFF_KA = Enum.KeyCode.I,
     KEY_FREECAM = Enum.KeyCode.LeftAlt,
     
-    -- Configurable Distances & Stats[cite: 1]
     MURDER_KA_DISTANCE = 10,
     SHERIFF_KA_DISTANCE = 10,
     ANTI_MURDER_DISTANCE = 20,
     ANTI_MURDER_SKY_HEIGHT = 100,
     
-    -- GUI Transparency Settings (0 = Opaque, 1 = Fully Transparent)[cite: 1]
-    GUI_TRANSPARENCY = 0.1,
+    GUI_TRANSPARENCY = 0.05,
     ELEMENT_TRANSPARENCY = 0.1,
 }
 
--- Active CONFIG table that updates during runtime[cite: 1]
 local CONFIG = {}
 for k, v in pairs(DEFAULT_CONFIG) do
     CONFIG[k] = v
@@ -53,13 +48,12 @@ end
 
 local ACTION_FREEZE = "FreecamFreezeMovement"
 
--- Role Colors[cite: 1]
-local COLOR_INNOCENT = Color3.fromRGB(50, 200, 50)  
-local COLOR_SHERIFF  = Color3.fromRGB(50, 120, 255) 
-local COLOR_MURDER   = Color3.fromRGB(230, 50, 50)  
+local COLOR_INNOCENT = Color3.fromRGB(45, 210, 110)  
+local COLOR_SHERIFF  = Color3.fromRGB(50, 140, 255) 
+local COLOR_MURDER   = Color3.fromRGB(255, 65, 85)  
 
 ---------------------------------------------------------
--- INTERNAL STATE[cite: 1]
+-- INTERNAL STATE
 ---------------------------------------------------------
 local isTeleportRunning = false
 local isAntiMurderActive = false
@@ -81,7 +75,7 @@ local isRightMouseDown = false
 local listeningForKeyConfig = nil
 
 ---------------------------------------------------------
--- MAIN GUI CREATION[cite: 1]
+-- MAIN GUI CREATION (REDESIGNED: Sleek Dark / Cyberpunk Aesthetic)
 ---------------------------------------------------------
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
@@ -96,12 +90,12 @@ screenGui.DisplayOrder = 100
 screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
--- 1. Main Container Frame[cite: 1]
+-- Main Container Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 220, 0, 255)
+mainFrame.Size = UDim2.new(0, 230, 0, 280)
 mainFrame.Position = UDim2.new(0.02, 0, 0.25, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+mainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -110,59 +104,64 @@ mainFrame.ZIndex = 10
 mainFrame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
+corner.CornerRadius = UDim.new(0, 12)
 corner.Parent = mainFrame
 
 local mainStroke = Instance.new("UIStroke")
 mainStroke.Name = "AnimatedStroke"
-mainStroke.Transparency = 0.4
-mainStroke.Thickness = 1.5
+mainStroke.Transparency = 0.3
+mainStroke.Thickness = 1.8
 mainStroke.Parent = mainFrame
 
 local mainStrokeGradient = Instance.new("UIGradient")
 mainStrokeGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 200, 255))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 229, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(112, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 128))
 })
 mainStrokeGradient.Parent = mainStroke
 
--- Animated Gradient Flow (Smooth shifting without size adjustments)[cite: 1]
+-- Animated Border Glow Flow
 task.spawn(function()
     local offset = 0
     while true do
-        offset = (offset + 0.01) % 1
+        offset = (offset + 0.015) % 1
         mainStrokeGradient.Offset = Vector2.new(offset, 0)
         
-        local tween1 = TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.1, Thickness = 2.2})
+        local tween1 = TweenService:Create(mainStroke, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.1, Thickness = 2.4})
         tween1:Play()
         tween1.Completed:Wait()
-        local tween2 = TweenService:Create(mainStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6, Thickness = 1.2})
+        local tween2 = TweenService:Create(mainStroke, TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.5, Thickness = 1.4})
         tween2:Play()
         tween2.Completed:Wait()
     end
 end)
 
--- Title Bar with Gradient Shift[cite: 1]
+-- Top Header Accent Bar
+local topBar = Instance.new("Frame")
+topBar.Size = UDim2.new(1, 0, 0, 38)
+topBar.BackgroundTransparency = 1
+topBar.ZIndex = 11
+topBar.Parent = mainFrame
+
+-- Title Label with Neon Accent
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
-titleLabel.Size = UDim2.new(1, -70, 0, 30)
-titleLabel.Position = UDim2.new(0, 12, 0, 0)
+titleLabel.Size = UDim2.new(1, -70, 1, 0)
+titleLabel.Position = UDim2.new(0, 14, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "NEXO HUB"
+titleLabel.Text = "NEXO // HUB"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextSize = 15
-titleLabel.ZIndex = 11
-titleLabel.Parent = mainFrame
+titleLabel.TextSize = 14
+titleLabel.ZIndex = 12
+titleLabel.Parent = topBar
 
 local titleGradient = Instance.new("UIGradient")
 titleGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.3, Color3.fromRGB(200, 140, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.7, Color3.fromRGB(140, 200, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 229, 255)),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
 })
 titleGradient.Parent = titleLabel
@@ -170,65 +169,79 @@ titleGradient.Parent = titleLabel
 task.spawn(function()
     local offset = 0
     while true do
-        offset = (offset + 0.012) % 1
+        offset = (offset + 0.01) % 1
         titleGradient.Offset = Vector2.new(offset, 0)
         RunService.RenderStepped:Wait()
     end
 end)
 
--- Settings Button[cite: 1]
+-- Settings Button (Gear)
 local settingsButton = Instance.new("TextButton")
 settingsButton.Name = "SettingsButton"
-settingsButton.Size = UDim2.new(0, 25, 0, 25)
-settingsButton.Position = UDim2.new(1, -55, 0, 3)
-settingsButton.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+settingsButton.Size = UDim2.new(0, 26, 0, 26)
+settingsButton.Position = UDim2.new(1, -58, 0, 6)
+settingsButton.BackgroundColor3 = Color3.fromRGB(22, 22, 30)
 settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 settingsButton.Text = "⚙"
-settingsButton.TextColor3 = Color3.fromRGB(200, 170, 255)
+settingsButton.TextColor3 = Color3.fromRGB(0, 229, 255)
 settingsButton.Font = Enum.Font.GothamBold
 settingsButton.TextSize = 13
-settingsButton.ZIndex = 11
-settingsButton.Parent = mainFrame
+settingsButton.ZIndex = 12
+settingsButton.Parent = topBar
 
 local settingsBtnCorner = Instance.new("UICorner")
 settingsBtnCorner.CornerRadius = UDim.new(0, 6)
 settingsBtnCorner.Parent = settingsButton
 
 settingsButton.MouseEnter:Connect(function()
-    TweenService:Create(settingsButton, TweenInfo.new(0.2), {Rotation = 45, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(settingsButton, TweenInfo.new(0.2), {Rotation = 90, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
 end)
 settingsButton.MouseLeave:Connect(function()
-    TweenService:Create(settingsButton, TweenInfo.new(0.2), {Rotation = 0, TextColor3 = Color3.fromRGB(200, 170, 255)}):Play()
+    TweenService:Create(settingsButton, TweenInfo.new(0.2), {Rotation = 0, TextColor3 = Color3.fromRGB(0, 229, 255)}):Play()
 end)
 
+-- Close Button
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 25, 0, 25)
-closeButton.Position = UDim2.new(1, -28, 0, 3)
+closeButton.Size = UDim2.new(0, 26, 0, 26)
+closeButton.Position = UDim2.new(1, -28, 0, 6)
 closeButton.BackgroundTransparency = 1
 closeButton.Text = "✕"
-closeButton.TextColor3 = Color3.fromRGB(255, 90, 110)
+closeButton.TextColor3 = Color3.fromRGB(255, 65, 85)
 closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 14
-closeButton.ZIndex = 11
-closeButton.Parent = mainFrame
+closeButton.TextSize = 13
+closeButton.ZIndex = 12
+closeButton.Parent = topBar
 
-local function createModuleButton(name, posY, defaultText)
+-- Content List Layout for Main Buttons
+local buttonContainer = Instance.new("Frame")
+buttonContainer.Size = UDim2.new(1, -20, 1, -45)
+buttonContainer.Position = UDim2.new(0, 10, 0, 38)
+buttonContainer.BackgroundTransparency = 1
+buttonContainer.ZIndex = 11
+buttonContainer.Parent = mainFrame
+
+local containerLayout = Instance.new("UIListLayout")
+containerLayout.Padding = UDim.new(0, 6)
+containerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+containerLayout.Parent = buttonContainer
+
+local function createModuleButton(name, defaultText, layoutOrder)
     local btn = Instance.new("TextButton")
     btn.Name = name
-    btn.Size = UDim2.new(0.9, 0, 0, 30)
-    btn.Position = UDim2.new(0.05, 0, 0, posY)
-    btn.BackgroundColor3 = Color3.fromRGB(45, 25, 35)
+    btn.LayoutOrder = layoutOrder
+    btn.Size = UDim2.new(1, 0, 0, 34)
+    btn.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
     btn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
     btn.Text = defaultText
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.GothamSemibold
-    btn.TextSize = 13
-    btn.ZIndex = 11
-    btn.Parent = mainFrame
+    btn.TextColor3 = Color3.fromRGB(230, 230, 240)
+    btn.Font = Enum.Font.GothamMedium
+    btn.TextSize = 12
+    btn.ZIndex = 12
+    btn.Parent = buttonContainer
 
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
     
     local btnStroke = Instance.new("UIStroke")
@@ -237,36 +250,34 @@ local function createModuleButton(name, posY, defaultText)
     btnStroke.Parent = btn
 
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY - 0.05}):Play()
-        TweenService:Create(btnStroke, TweenInfo.new(0.2), {Transparency = 0.3, Color = Color3.fromRGB(160, 120, 255)}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY - 0.05, BackgroundColor3 = Color3.fromRGB(25, 25, 35)}):Play()
+        TweenService:Create(btnStroke, TweenInfo.new(0.2), {Transparency = 0.3, Color = Color3.fromRGB(0, 229, 255)}):Play()
     end)
 
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY, BackgroundColor3 = Color3.fromRGB(18, 18, 25)}):Play()
         TweenService:Create(btnStroke, TweenInfo.new(0.2), {Transparency = 0.85, Color = Color3.fromRGB(255, 255, 255)}):Play()
     end)
 
     return btn
 end
 
--- Module Buttons Stack[cite: 1]
-local startButton = createModuleButton("StartButton", 35, "Start TP Loop (T)")
-startButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
+local startButton = createModuleButton("StartButton", "Start TP Loop (T)", 1)
+startButton.BackgroundColor3 = Color3.fromRGB(12, 35, 30)
 
-local antiMurderBtn = createModuleButton("AntiMurderButton", 72, "Anti-Murder: OFF (Y)")
-local murderKAButton = createModuleButton("MurderKAButton", 109, "Murder KA: OFF (U)")
-local sheriffKAButton = createModuleButton("SheriffKAButton", 146, "Sheriff KA: OFF (I)")
-local toggleButton   = createModuleButton("ToggleButton", 183, "FREECAM: OFF (ALT)")
-toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+local antiMurderBtn = createModuleButton("AntiMurderButton", "Anti-Murder: OFF (Y)", 2)
+local murderKAButton = createModuleButton("MurderKAButton", "Murder KA: OFF (U)", 3)
+local sheriffKAButton = createModuleButton("SheriffKAButton", "Sheriff KA: OFF (I)", 4)
+local toggleButton   = createModuleButton("ToggleButton", "FREECAM: OFF (ALT)", 5)
 
 ---------------------------------------------------------
--- SETTINGS MENU / DEVELOPER CONFIG TAB[cite: 1]
+-- SETTINGS MENU / CONSOLE TAB
 ---------------------------------------------------------
 local settingsFrame = Instance.new("Frame")
 settingsFrame.Name = "SettingsFrame"
-settingsFrame.Size = UDim2.new(0, 420, 0, 410)
+settingsFrame.Size = UDim2.new(0, 440, 0, 420)
 settingsFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
-settingsFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+settingsFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
 settingsFrame.BorderSizePixel = 0
 settingsFrame.Active = true
@@ -276,61 +287,61 @@ settingsFrame.ZIndex = 20
 settingsFrame.Parent = screenGui
 
 local settingsCorner = Instance.new("UICorner")
-settingsCorner.CornerRadius = UDim.new(0, 10)
+settingsCorner.CornerRadius = UDim.new(0, 12)
 settingsCorner.Parent = settingsFrame
 
 local settingsStroke = Instance.new("UIStroke")
-settingsStroke.Transparency = 0.4
-settingsStroke.Thickness = 1.5
+settingsStroke.Transparency = 0.3
+settingsStroke.Thickness = 1.8
 settingsStroke.Parent = settingsFrame
 
 local settingsStrokeGradient = Instance.new("UIGradient")
 settingsStrokeGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 200, 255))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 229, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(112, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 128))
 })
 settingsStrokeGradient.Parent = settingsStroke
 
 task.spawn(function()
     local offset = 0
     while true do
-        offset = (offset + 0.01) % 1
+        offset = (offset + 0.015) % 1
         settingsStrokeGradient.Offset = Vector2.new(offset, 0)
         RunService.RenderStepped:Wait()
     end
 end)
 
 local settingsTitle = Instance.new("TextLabel")
-settingsTitle.Size = UDim2.new(1, -40, 0, 35)
-settingsTitle.Position = UDim2.new(0, 12, 0, 0)
+settingsTitle.Size = UDim2.new(1, -40, 0, 40)
+settingsTitle.Position = UDim2.new(0, 14, 0, 0)
 settingsTitle.BackgroundTransparency = 1
-settingsTitle.Text = "NEXO // Config & Console"
+settingsTitle.Text = "NEXO // CONFIGURATION & CONSOLE"
 settingsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 settingsTitle.Font = Enum.Font.GothamBold
-settingsTitle.TextSize = 15
+settingsTitle.TextSize = 14
 settingsTitle.TextXAlignment = Enum.TextXAlignment.Left
 settingsTitle.ZIndex = 21
 settingsTitle.Parent = settingsFrame
 
 local settingsClose = Instance.new("TextButton")
-settingsClose.Size = UDim2.new(0, 25, 0, 25)
-settingsClose.Position = UDim2.new(1, -28, 0, 5)
+settingsClose.Size = UDim2.new(0, 26, 0, 26)
+settingsClose.Position = UDim2.new(1, -30, 0, 7)
 settingsClose.BackgroundTransparency = 1
 settingsClose.Text = "✕"
-settingsClose.TextColor3 = Color3.fromRGB(255, 90, 110)
+settingsClose.TextColor3 = Color3.fromRGB(255, 65, 85)
 settingsClose.Font = Enum.Font.GothamBold
 settingsClose.TextSize = 14
 settingsClose.ZIndex = 21
 settingsClose.Parent = settingsFrame
 
--- Config Container (Left Side of Settings)[cite: 1]
+-- Config Container (Left Side of Settings)
 local configContainer = Instance.new("ScrollingFrame")
 configContainer.Size = UDim2.new(0.45, -5, 1, -125)
-configContainer.Position = UDim2.new(0, 10, 0, 40)
+configContainer.Position = UDim2.new(0, 12, 0, 45)
 configContainer.BackgroundTransparency = 1
 configContainer.BorderSizePixel = 0
-configContainer.ScrollBarThickness = 4
+configContainer.ScrollBarThickness = 3
 configContainer.CanvasSize = UDim2.new(0, 0, 0, 500)
 configContainer.ZIndex = 21
 configContainer.Parent = settingsFrame
@@ -353,30 +364,30 @@ end
 
 local function createConfigInput(configKey, nameText, defaultVal, callback)
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 40)
+    row.Size = UDim2.new(1, 0, 0, 36)
     row.BackgroundTransparency = 1
     row.ZIndex = 22
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Size = UDim2.new(0.55, 0, 1, 0)
     label.BackgroundTransparency = 1
     label.Text = nameText
-    label.TextColor3 = Color3.fromRGB(200, 200, 210)
+    label.TextColor3 = Color3.fromRGB(180, 180, 195)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Font = Enum.Font.Gotham
-    label.TextSize = 12
+    label.TextSize = 11
     label.ZIndex = 22
     label.Parent = row
 
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(0.4, 0, 0.8, 0)
-    box.Position = UDim2.new(0.6, 0, 0.1, 0)
-    box.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+    box.Size = UDim2.new(0.45, 0, 0.8, 0)
+    box.Position = UDim2.new(0.55, 0, 0.1, 0)
+    box.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
     box.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.TextColor3 = Color3.fromRGB(0, 229, 255)
     box.Text = tostring(defaultVal)
     box.Font = Enum.Font.GothamBold
-    box.TextSize = 12
+    box.TextSize = 11
     box.ZIndex = 22
     box.Parent = row
 
@@ -400,7 +411,7 @@ end
 
 local function createKeybindInput(configKey, nameText)
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 40)
+    row.Size = UDim2.new(1, 0, 0, 36)
     row.BackgroundTransparency = 1
     row.ZIndex = 22
 
@@ -408,19 +419,19 @@ local function createKeybindInput(configKey, nameText)
     label.Size = UDim2.new(0.5, 0, 1, 0)
     label.BackgroundTransparency = 1
     label.Text = nameText
-    label.TextColor3 = Color3.fromRGB(200, 200, 210)
+    label.TextColor3 = Color3.fromRGB(180, 180, 195)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Font = Enum.Font.Gotham
-    label.TextSize = 12
+    label.TextSize = 11
     label.ZIndex = 22
     label.Parent = row
 
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.5, 0, 0.8, 0)
     btn.Position = UDim2.new(0.5, 0, 0.1, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
     btn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    btn.TextColor3 = Color3.fromRGB(200, 170, 255)
+    btn.TextColor3 = Color3.fromRGB(0, 229, 255)
     btn.Text = CONFIG[configKey].Name
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 11
@@ -444,7 +455,7 @@ local function createKeybindInput(configKey, nameText)
             if input.UserInputType == Enum.UserInputType.Keyboard then
                 CONFIG[configKey] = input.KeyCode
                 btn.Text = input.KeyCode.Name
-                btn.TextColor3 = Color3.fromRGB(200, 170, 255)
+                btn.TextColor3 = Color3.fromRGB(0, 229, 255)
                 listeningForKeyConfig = nil
                 updateButtonTexts()
                 connection:Disconnect()
@@ -455,16 +466,16 @@ local function createKeybindInput(configKey, nameText)
     row.Parent = configContainer
 end
 
--- Reset Settings Button[cite: 1]
+-- Reset Settings Button
 local resetSettingsBtn = Instance.new("TextButton")
 resetSettingsBtn.Size = UDim2.new(0.45, -5, 0, 32)
-resetSettingsBtn.Position = UDim2.new(0, 10, 1, -75)
-resetSettingsBtn.BackgroundColor3 = Color3.fromRGB(50, 25, 30)
+resetSettingsBtn.Position = UDim2.new(0, 12, 1, -75)
+resetSettingsBtn.BackgroundColor3 = Color3.fromRGB(35, 18, 25)
 resetSettingsBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 resetSettingsBtn.Text = "↺ Reset Settings"
-resetSettingsBtn.TextColor3 = Color3.fromRGB(255, 120, 130)
+resetSettingsBtn.TextColor3 = Color3.fromRGB(255, 65, 85)
 resetSettingsBtn.Font = Enum.Font.GothamBold
-resetSettingsBtn.TextSize = 12
+resetSettingsBtn.TextSize = 11
 resetSettingsBtn.ZIndex = 21
 resetSettingsBtn.Parent = settingsFrame
 
@@ -473,28 +484,18 @@ resetCorner.CornerRadius = UDim.new(0, 6)
 resetCorner.Parent = resetSettingsBtn
 
 local resetStroke = Instance.new("UIStroke")
-resetStroke.Color = Color3.fromRGB(255, 90, 110)
+resetStroke.Color = Color3.fromRGB(255, 65, 85)
 resetStroke.Transparency = 0.6
 resetStroke.Parent = resetSettingsBtn
 
-resetSettingsBtn.MouseEnter:Connect(function()
-    TweenService:Create(resetSettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(70, 30, 40), BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY - 0.05}):Play()
-    TweenService:Create(resetStroke, TweenInfo.new(0.2), {Transparency = 0.2}):Play()
-end)
-
-resetSettingsBtn.MouseLeave:Connect(function()
-    TweenService:Create(resetSettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 25, 30), BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY}):Play()
-    TweenService:Create(resetStroke, TweenInfo.new(0.2), {Transparency = 0.6}):Play()
-end)
-
--- Console Scrolling Frame for Logs[cite: 1]
+-- Console Scrolling Frame
 local consoleScroll = Instance.new("ScrollingFrame")
 consoleScroll.Size = UDim2.new(0.53, -5, 1, -85)
-consoleScroll.Position = UDim2.new(0.47, 0, 0, 40)
-consoleScroll.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+consoleScroll.Position = UDim2.new(0.47, 0, 0, 45)
+consoleScroll.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
 consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 consoleScroll.BorderSizePixel = 0
-consoleScroll.ScrollBarThickness = 6
+consoleScroll.ScrollBarThickness = 4
 consoleScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 consoleScroll.ZIndex = 21
 consoleScroll.Parent = settingsFrame
@@ -523,13 +524,13 @@ local function logToConsole(message, messageType)
     logRow.ZIndex = 22
     
     if messageType == Enum.MessageType.MessageOutput then
-        logRow.TextColor3 = Color3.fromRGB(180, 180, 190)
+        logRow.TextColor3 = Color3.fromRGB(160, 160, 175)
     elseif messageType == Enum.MessageType.MessageWarning then
         logRow.TextColor3 = Color3.fromRGB(255, 200, 80)
     elseif messageType == Enum.MessageType.MessageError then
-        logRow.TextColor3 = Color3.fromRGB(255, 90, 110)
+        logRow.TextColor3 = Color3.fromRGB(255, 65, 85)
     else
-        logRow.TextColor3 = Color3.fromRGB(140, 120, 255)
+        logRow.TextColor3 = Color3.fromRGB(0, 229, 255)
     end
     
     logRow.Parent = consoleScroll
@@ -541,16 +542,16 @@ LogService.MessageOut:Connect(function(message, messageType)
 end)
 
 local commandInput = Instance.new("TextBox")
-commandInput.Size = UDim2.new(1, -20, 0, 35)
-commandInput.Position = UDim2.new(0, 10, 1, -40)
-commandInput.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+commandInput.Size = UDim2.new(1, -20, 0, 32)
+commandInput.Position = UDim2.new(0, 10, 1, -38)
+commandInput.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 commandInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 commandInput.PlaceholderText = "Type command here..."
-commandInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
+commandInput.PlaceholderColor3 = Color3.fromRGB(100, 100, 120)
 commandInput.Text = ""
 commandInput.Font = Enum.Font.Code
-commandInput.TextSize = 12
+commandInput.TextSize = 11
 commandInput.ZIndex = 21
 commandInput.Parent = settingsFrame
 
@@ -559,12 +560,12 @@ cmdCorner.CornerRadius = UDim.new(0, 6)
 cmdCorner.Parent = commandInput
 
 ---------------------------------------------------------
--- FORWARD DECLARATIONS[cite: 1]
+-- FORWARD DECLARATIONS
 ---------------------------------------------------------
-local startTeleportSequence, disableFreecam, enableFreecam
+local startTeleportSequence, disableFreecam, enableFreecam, teleportToFreecam
 
 ---------------------------------------------------------
--- COMMAND PROCESSOR[cite: 1]
+-- COMMAND PROCESSOR
 ---------------------------------------------------------
 local function processCommand(text)
     text = string.lower(string.match(text, "^%s*(.-)%s*$"))
@@ -588,13 +589,13 @@ local function processCommand(text)
 
         if moduleName == "antimurder" or moduleName == "am" then
             isAntiMurderActive = not isAntiMurderActive
-            antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+            antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
         elseif moduleName == "murderka" or moduleName == "mka" then
             isMurderKillAuraActive = not isMurderKillAuraActive
-            murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+            murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
         elseif moduleName == "sheriffka" or moduleName == "ska" then
             isSheriffKillAuraActive = not isSheriffKillAuraActive
-            sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+            sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
         elseif moduleName == "freecam" or moduleName == "fc" then
             if isFreecamActive then disableFreecam() else enableFreecam() end
         elseif moduleName == "tploop" or moduleName == "tp" then
@@ -659,13 +660,6 @@ local function processCommand(text)
         updateButtonTexts()
         mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
         settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
-        settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-        antiMurderBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-        murderKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-        sheriffKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-        toggleButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-        consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-        commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
         logToConsole("All settings reset to defaults via command.", Enum.MessageType.MessageInfo)
     elseif cmd == "help" then
         logToConsole("Commands: toggle [antimurder/murderka/sheriffka/freecam/tploop]", Enum.MessageType.MessageInfo)
@@ -687,12 +681,11 @@ settingsButton.MouseButton1Click:Connect(function()
     settingsFrame.Visible = not settingsFrame.Visible
     if settingsFrame.Visible then
         settingsFrame.Size = UDim2.new(0, 0, 0, 0)
-        TweenService:Create(settingsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 420, 0, 410)}):Play()
+        TweenService:Create(settingsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 440, 0, 420)}):Play()
     end
 end)
 settingsClose.MouseButton1Click:Connect(function() settingsFrame.Visible = false end)
 
--- Reset Button Click Event[cite: 1]
 resetSettingsBtn.MouseButton1Click:Connect(function()
     for k, v in pairs(DEFAULT_CONFIG) do
         CONFIG[k] = v
@@ -706,22 +699,14 @@ resetSettingsBtn.MouseButton1Click:Connect(function()
     updateButtonTexts()
     mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
     settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
-    settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    antiMurderBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    murderKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    sheriffKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    toggleButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    
     logToConsole("Settings successfully reset to factory defaults.", Enum.MessageType.MessageInfo)
 end)
 
--- Spectate Bar[cite: 1]
+-- Spectate Bar (Redesigned)
 local specFrame = Instance.new("Frame")
-specFrame.Size = UDim2.new(0, 300, 0, 45)
-specFrame.Position = UDim2.new(0.5, -150, 0.88, 0)
-specFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+specFrame.Size = UDim2.new(0, 280, 0, 42)
+specFrame.Position = UDim2.new(0.5, -140, 0.88, 0)
+specFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 specFrame.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 specFrame.BorderSizePixel = 0
 specFrame.Visible = false
@@ -738,28 +723,18 @@ specStroke.Parent = specFrame
 
 local specStrokeGradient = Instance.new("UIGradient")
 specStrokeGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 200, 255))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 229, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 128))
 })
 specStrokeGradient.Parent = specStroke
 
-task.spawn(function()
-    local offset = 0
-    while true do
-        offset = (offset + 0.01) % 1
-        specStrokeGradient.Offset = Vector2.new(offset, 0)
-        RunService.RenderStepped:Wait()
-    end
-end)
-
 local prevBtn = Instance.new("TextButton")
-prevBtn.Size = UDim2.new(0, 40, 1, -10)
-prevBtn.Position = UDim2.new(0, 5, 0, 5)
+prevBtn.Size = UDim2.new(0, 36, 1, -8)
+prevBtn.Position = UDim2.new(0, 4, 0, 4)
 prevBtn.Text = "<"
 prevBtn.Font = Enum.Font.GothamBold
-prevBtn.TextSize = 18
-prevBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+prevBtn.TextSize = 16
+prevBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 prevBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 prevBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 prevBtn.ZIndex = 11
@@ -770,12 +745,12 @@ prevCorner.CornerRadius = UDim.new(0, 6)
 prevCorner.Parent = prevBtn
 
 local nextBtn = Instance.new("TextButton")
-nextBtn.Size = UDim2.new(0, 40, 1, -10)
-nextBtn.Position = UDim2.new(1, -45, 0, 5)
+nextBtn.Size = UDim2.new(0, 36, 1, -8)
+nextBtn.Position = UDim2.new(1, -40, 0, 4)
 nextBtn.Text = ">"
 nextBtn.Font = Enum.Font.GothamBold
-nextBtn.TextSize = 18
-nextBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+nextBtn.TextSize = 16
+nextBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 nextBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 nextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 nextBtn.ZIndex = 11
@@ -786,24 +761,24 @@ nextCorner.CornerRadius = UDim.new(0, 6)
 nextCorner.Parent = nextBtn
 
 local nameLabel = Instance.new("TextLabel")
-nameLabel.Size = UDim2.new(1, -100, 1, -10)
-nameLabel.Position = UDim2.new(0, 50, 0, 5)
+nameLabel.Size = UDim2.new(1, -88, 1, -8)
+nameLabel.Position = UDim2.new(0, 44, 0, 4)
 nameLabel.BackgroundTransparency = 1
 nameLabel.Font = Enum.Font.GothamBold
-nameLabel.TextSize = 14
+nameLabel.TextSize = 13
 nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 nameLabel.Text = "Spectating: None"
 nameLabel.ZIndex = 11
 nameLabel.Parent = specFrame
 
 ---------------------------------------------------------
--- PLAYER LIST HEADER FRAME (ROLE ESP LIST)[cite: 1]
+-- PLAYER LIST HEADER FRAME (Role ESP List Redesigned)
 ---------------------------------------------------------
 local listFrame = Instance.new("Frame")
 listFrame.Name = "PlayerListFrame"
-listFrame.Size = UDim2.new(0, 220, 0, 250)
-listFrame.Position = UDim2.new(0.02, 0, 0.53, 0)
-listFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+listFrame.Size = UDim2.new(0, 230, 0, 250)
+listFrame.Position = UDim2.new(0.02, 0, 0.55, 0)
+listFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 listFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
 listFrame.BorderSizePixel = 0
 listFrame.Active = true
@@ -812,7 +787,7 @@ listFrame.ZIndex = 10
 listFrame.Parent = screenGui
 
 local listCorner = Instance.new("UICorner")
-listCorner.CornerRadius = UDim.new(0, 10)
+listCorner.CornerRadius = UDim.new(0, 12)
 listCorner.Parent = listFrame
 
 local listStroke = Instance.new("UIStroke")
@@ -823,19 +798,19 @@ listStroke.Parent = listFrame
 
 local listStrokeGradient = Instance.new("UIGradient")
 listStrokeGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 200)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 200, 255))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 229, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(112, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 128))
 })
 listStrokeGradient.Parent = listStroke
 
 task.spawn(function()
     local offset = 0
     while true do
-        offset = (offset + 0.01) % 1
+        offset = (offset + 0.015) % 1
         listStrokeGradient.Offset = Vector2.new(offset, 0)
         
-        local tween1 = TweenService:Create(listStroke, TweenInfo.new(2.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.15, Thickness = 2.0})
+        local tween1 = TweenService:Create(listStroke, TweenInfo.new(2.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.2, Thickness = 1.8})
         tween1:Play()
         tween1.Completed:Wait()
         local tween2 = TweenService:Create(listStroke, TweenInfo.new(2.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6, Thickness = 1.2})
@@ -846,39 +821,22 @@ end)
 
 local listTitle = Instance.new("TextLabel")
 listTitle.Name = "Header"
-listTitle.Size = UDim2.new(1, 0, 0, 30)
+listTitle.Size = UDim2.new(1, 0, 0, 32)
 listTitle.Position = UDim2.new(0, 0, 0, 0)
 listTitle.BackgroundTransparency = 1
-listTitle.Text = "NEXO // Player Roles"
+listTitle.Text = "NEXO // PLAYER ROLES"
 listTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 listTitle.Font = Enum.Font.GothamBold
-listTitle.TextSize = 14
+listTitle.TextSize = 13
 listTitle.ZIndex = 11
 listTitle.Parent = listFrame
 
-local listTitleGradient = Instance.new("UIGradient")
-listTitleGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 120, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
-})
-listTitleGradient.Parent = listTitle
-
-task.spawn(function()
-    local offset = 0
-    while true do
-        offset = (offset - 0.006) % 1
-        listTitleGradient.Offset = Vector2.new(offset, 0)
-        RunService.RenderStepped:Wait()
-    end
-end)
-
 local scrollContainer = Instance.new("ScrollingFrame")
-scrollContainer.Size = UDim2.new(1, -10, 1, -35)
-scrollContainer.Position = UDim2.new(0, 5, 0, 30)
+scrollContainer.Size = UDim2.new(1, -12, 1, -38)
+scrollContainer.Position = UDim2.new(0, 6, 0, 32)
 scrollContainer.BackgroundTransparency = 1
 scrollContainer.BorderSizePixel = 0
-scrollContainer.ScrollBarThickness = 4
+scrollContainer.ScrollBarThickness = 3
 scrollContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollContainer.ZIndex = 11
 scrollContainer.Parent = listFrame
@@ -892,7 +850,7 @@ listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     scrollContainer.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
 end)
 
--- Fill Settings Config Fields & Keybind Rebinders[cite: 1]
+-- Fill Settings Fields & Keybinds
 createKeybindInput("KEY_TP_LOOP", "TP Loop Key:")
 createKeybindInput("KEY_ANTI_MURDER", "Anti-Murder Key:")
 createKeybindInput("KEY_MURDER_KA", "Murder KA Key:")
@@ -912,17 +870,10 @@ createConfigInput("GUI_TRANSPARENCY", "GUI Transparency:", CONFIG.GUI_TRANSPAREN
 end)
 createConfigInput("ELEMENT_TRANSPARENCY", "Elem Transparency:", CONFIG.ELEMENT_TRANSPARENCY, function(v)
     CONFIG.ELEMENT_TRANSPARENCY = math.clamp(v, 0, 1)
-    settingsButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    antiMurderBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    murderKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    sheriffKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    toggleButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
-    commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
 end)
 
 ---------------------------------------------------------
--- HELPER FUNCTIONS & ROLE SCANNER[cite: 1]
+-- HELPER FUNCTIONS & ROLE SCANNER
 ---------------------------------------------------------
 local function getPlayerRole(player)
     if not player then return "Innocent", COLOR_INNOCENT end
@@ -979,8 +930,8 @@ local function updatePlayerList()
 
         local rowFrame = Instance.new("Frame")
         rowFrame.Name = p.Name
-        rowFrame.Size = UDim2.new(1, -6, 0, 22)
-        rowFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+        rowFrame.Size = UDim2.new(1, -4, 0, 24)
+        rowFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
         rowFrame.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
         rowFrame.BorderSizePixel = 0
         rowFrame.ZIndex = 12
@@ -991,25 +942,25 @@ local function updatePlayerList()
 
         local pNameLabel = Instance.new("TextLabel")
         pNameLabel.Size = UDim2.new(0.6, 0, 1, 0)
-        pNameLabel.Position = UDim2.new(0, 6, 0, 0)
+        pNameLabel.Position = UDim2.new(0, 8, 0, 0)
         pNameLabel.BackgroundTransparency = 1
         pNameLabel.Text = p.DisplayName
-        pNameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        pNameLabel.TextColor3 = Color3.fromRGB(240, 240, 250)
         pNameLabel.TextXAlignment = Enum.TextXAlignment.Left
         pNameLabel.Font = Enum.Font.Gotham
-        pNameLabel.TextSize = 12
+        pNameLabel.TextSize = 11
         pNameLabel.ZIndex = 13
         pNameLabel.Parent = rowFrame
 
         local roleLabel = Instance.new("TextLabel")
-        roleLabel.Size = UDim2.new(0.4, -6, 1, 0)
+        roleLabel.Size = UDim2.new(0.4, -8, 1, 0)
         roleLabel.Position = UDim2.new(0.6, 0, 0, 0)
         roleLabel.BackgroundTransparency = 1
         roleLabel.Text = roleText
         roleLabel.TextColor3 = roleColor
         roleLabel.TextXAlignment = Enum.TextXAlignment.Right
         roleLabel.Font = Enum.Font.GothamBold
-        roleLabel.TextSize = 12
+        roleLabel.TextSize = 11
         roleLabel.ZIndex = 13
         roleLabel.Parent = rowFrame
 
@@ -1074,7 +1025,7 @@ local function clickOnPosition(worldPos)
 end
 
 ---------------------------------------------------------
--- EXISTING GAMEPLAY LOOPS[cite: 1]
+-- GAMEPLAY LOOPS
 ---------------------------------------------------------
 local function isVisibleToPlayer(targetPart)
     local char = localPlayer.Character
@@ -1095,7 +1046,7 @@ local function isVisibleToPlayer(targetPart)
     return rayResult == nil
 end
 
--- Anti-Murder Loop[cite: 1]
+-- Anti-Murder Loop
 task.spawn(function()
     while true do
         task.wait(0.1)
@@ -1123,7 +1074,7 @@ task.spawn(function()
     end
 end)
 
--- Murderer Kill Aura[cite: 1]
+-- Murderer Kill Aura
 task.spawn(function()
     while true do
         task.wait(0.05)
@@ -1164,7 +1115,7 @@ task.spawn(function()
     end
 end)
 
--- Sheriff Kill Aura[cite: 1]
+-- Sheriff Kill Aura
 task.spawn(function()
     while true do
         task.wait(0.05)
@@ -1196,7 +1147,7 @@ function startTeleportSequence()
 
     isTeleportRunning = true
     startButton.Text = "Running... (" .. string.upper(CONFIG.KEY_TP_LOOP.Name) .. ")"
-    startButton.BackgroundColor3 = Color3.fromRGB(30, 45, 40)
+    startButton.BackgroundColor3 = Color3.fromRGB(12, 35, 30)
 
     if toolType == "None" then
         local currentPos = myHRP.Position
@@ -1205,11 +1156,12 @@ function startTeleportSequence()
         raycastParams.FilterDescendantsInstances = {myCharacter}
         raycastParams.IgnoreWater = true
         
-        local rayResult = workspace:Raycast(Vector3.new(currentPos.X, 1000, currentPos.Z), Vector3.new(0, -1500, 0), raycastParams)
+        -- Raycast from high altitude down to find the highest surface at the current position without 100-stud fallback jump
+        local rayResult = workspace:Raycast(Vector3.new(currentPos.X, 5000, currentPos.Z), Vector3.new(0, -10000, 0), raycastParams)
         if rayResult then
             myHRP.CFrame = CFrame.new(rayResult.Position + Vector3.new(0, 3, 0))
         else
-            myHRP.CFrame = myHRP.CFrame * CFrame.new(0, 100, 0)
+            myHRP.CFrame = CFrame.new(currentPos + Vector3.new(0, 5, 0))
         end
         task.wait(5)
     else
@@ -1241,20 +1193,20 @@ function startTeleportSequence()
 
     isTeleportRunning = false
     updateButtonTexts()
-    startButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
+    startButton.BackgroundColor3 = Color3.fromRGB(12, 35, 30)
 end
 
 ---------------------------------------------------------
--- FREECAM LOGIC[cite: 1]
+-- FREECAM LOGIC
 ---------------------------------------------------------
 local function updateButtonUI()
     if isFreecamActive then
-        toggleButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(12, 35, 30)
         toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
         specFrame.Visible = true
     else
-        toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        toggleButton.TextColor3 = Color3.fromRGB(200, 200, 210)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+        toggleButton.TextColor3 = Color3.fromRGB(230, 230, 240)
         specFrame.Visible = false
     end
     updateButtonTexts()
@@ -1292,8 +1244,8 @@ local function createGhostModel(originalChar)
     local ghost = Instance.new("Model")
     ghost.Name = "GhostAvatar"
     local ghostHrp = hrp:Clone()
-    ghostHrp.Transparency = 0.1
-    ghostHrp.Color = Color3.fromRGB(150, 120, 255)
+    ghostHrp.Transparency = 0.2
+    ghostHrp.Color = Color3.fromRGB(0, 229, 255)
     ghostHrp.Material = Enum.Material.ForceField
     ghostHrp.CanCollide = false
     ghostHrp.Anchored = true
@@ -1344,9 +1296,9 @@ function disableFreecam()
     updateButtonUI()
 end
 
-local function teleportToFreecam()
+function teleportToFreecam()
     if not isFreecamActive then return end
-    local targetCFrame = camera.CFrame
+    local targetCFrame = CFrame.new(cameraPos) * CFrame.Angles(camera.CFrame:ToOrientation())
     local character = localPlayer.Character
     if character and character:FindFirstChild("HumanoidRootPart") then
         character.HumanoidRootPart.CFrame = targetCFrame
@@ -1420,7 +1372,7 @@ function enableFreecam()
 end
 
 ---------------------------------------------------------
--- UI CONNECTIONS & EVENTS[cite: 1]
+-- UI CONNECTIONS & EVENTS
 ---------------------------------------------------------
 startButton.MouseButton1Click:Connect(function()
     if not isTeleportRunning then task.spawn(startTeleportSequence) else isTeleportRunning = false end
@@ -1428,19 +1380,19 @@ end)
 
 antiMurderBtn.MouseButton1Click:Connect(function()
     isAntiMurderActive = not isAntiMurderActive
-    antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+    antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
     updateButtonTexts()
 end)
 
 murderKAButton.MouseButton1Click:Connect(function()
     isMurderKillAuraActive = not isMurderKillAuraActive
-    murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+    murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
     updateButtonTexts()
 end)
 
 sheriffKAButton.MouseButton1Click:Connect(function()
     isSheriffKillAuraActive = not isSheriffKillAuraActive
-    sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+    sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
     updateButtonTexts()
 end)
 
@@ -1460,15 +1412,15 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if not isTeleportRunning then task.spawn(startTeleportSequence) else isTeleportRunning = false end
         elseif input.KeyCode == CONFIG.KEY_ANTI_MURDER then
             isAntiMurderActive = not isAntiMurderActive
-            antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+            antiMurderBtn.BackgroundColor3 = isAntiMurderActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
             updateButtonTexts()
         elseif input.KeyCode == CONFIG.KEY_MURDER_KA then
             isMurderKillAuraActive = not isMurderKillAuraActive
-            murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+            murderKAButton.BackgroundColor3 = isMurderKillAuraActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
             updateButtonTexts()
         elseif input.KeyCode == CONFIG.KEY_SHERIFF_KA then
             isSheriffKillAuraActive = not isSheriffKillAuraActive
-            sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(20, 45, 35) or Color3.fromRGB(45, 25, 35)
+            sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
             updateButtonTexts()
         elseif input.KeyCode == CONFIG.KEY_FREECAM then
             if isFreecamActive then disableFreecam() else enableFreecam() end
