@@ -119,6 +119,7 @@ local DEFAULT_CONFIG = {
     KEY_ANTI_MURDER = Enum.KeyCode.Y,
     KEY_MURDER_KA = Enum.KeyCode.U,
     KEY_SHERIFF_KA = Enum.KeyCode.I,
+    KEY_AUTO_GUN = Enum.KeyCode.O,
     KEY_FREECAM = Enum.KeyCode.LeftAlt,
     
     MURDER_KA_DISTANCE = 10,
@@ -148,6 +149,7 @@ local isTeleportRunning = false
 local isAntiMurderActive = false
 local isMurderKillAuraActive = false
 local isSheriffKillAuraActive = false
+local isAutoGunActive = false
 
 local isFreecamActive = false
 local isSpectating = false
@@ -179,18 +181,136 @@ screenGui.DisplayOrder = 100
 screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
--- Main Container Frame
+---------------------------------------------------------
+-- CINEMATIC INTRO SPLASH / LOADING ANIMATION
+---------------------------------------------------------
+local introScreen = Instance.new("Frame")
+introScreen.Name = "IntroScreen"
+introScreen.Size = UDim2.new(1, 0, 1, 0)
+introScreen.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
+introScreen.BackgroundTransparency = 0
+introScreen.BorderSizePixel = 0
+introScreen.ZIndex = 100
+introScreen.Parent = screenGui
+
+-- Cinematic Vignette / Radial Glow Overlay
+local introVignette = Instance.new("Frame")
+introVignette.Size = UDim2.new(1, 0, 1, 0)
+introVignette.BackgroundTransparency = 1
+introVignette.ZIndex = 101
+introVignette.Parent = introScreen
+
+local vignetteGradient = Instance.new("UIGradient")
+vignetteGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 0.2),
+    NumberSequenceKeypoint.new(0.5, 0.8),
+    NumberSequenceKeypoint.new(1, 1)
+})
+vignetteGradient.Parent = introVignette
+
+-- Cinema Lens Flare / Sweep Bar
+local lensFlare = Instance.new("Frame")
+lensFlare.Size = UDim2.new(0, 2, 1, 0)
+lensFlare.Position = UDim2.new(-0.2, 0, 0, 0)
+lensFlare.BackgroundColor3 = Color3.fromRGB(0, 229, 255)
+lensFlare.BackgroundTransparency = 0.5
+lensFlare.BorderSizePixel = 0
+lensFlare.ZIndex = 102
+lensFlare.Parent = introScreen
+
+local flareGradient = Instance.new("UIGradient")
+flareGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 1),
+    NumberSequenceKeypoint.new(0.5, 0),
+    NumberSequenceKeypoint.new(1, 1)
+})
+flareGradient.Parent = lensFlare
+
+-- Cinematic Studio Logo Text Container
+local logoContainer = Instance.new("Frame")
+logoContainer.Size = UDim2.new(0, 600, 0, 120)
+logoContainer.Position = UDim2.new(0.5, -300, 0.5, -60)
+logoContainer.BackgroundTransparency = 1
+logoContainer.ZIndex = 102
+logoContainer.Parent = introScreen
+
+local introLogo = Instance.new("TextLabel")
+introLogo.Size = UDim2.new(1, 0, 0, 60)
+introLogo.Position = UDim2.new(0, 0, 0, 0)
+introLogo.BackgroundTransparency = 1
+introLogo.Text = "nicoprojects"
+introLogo.TextColor3 = Color3.fromRGB(255, 255, 255)
+introLogo.Font = Enum.Font.GothamBold
+introLogo.TextSize = 42
+introLogo.TextTransparency = 1
+introLogo.ZIndex = 103
+introLogo.Parent = logoContainer
+
+local introGradient = Instance.new("UIGradient")
+introGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 229, 255)),
+    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 255, 255)),
+    ColorSequenceKeypoint.new(0.7, Color3.fromRGB(112, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 128))
+})
+introGradient.Parent = introLogo
+
+local introSub = Instance.new("TextLabel")
+introSub.Size = UDim2.new(1, 0, 0, 30)
+introSub.Position = UDim2.new(0, 0, 0, 65)
+introSub.BackgroundTransparency = 1
+introSub.Text = "nicoprojects precense modmenu"
+introSub.TextColor3 = Color3.fromRGB(140, 140, 165)
+introSub.Font = Enum.Font.Code
+introSub.TextSize = 11
+introSub.TextTransparency = 1
+introSub.ZIndex = 103
+introSub.Parent = logoContainer
+
+-- Hide main elements during intro
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 230, 0, 280)
+mainFrame.Size = UDim2.new(0, 230, 0, 320)
 mainFrame.Position = UDim2.new(0.02, 0, 0.25, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 mainFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
+mainFrame.Visible = false
 mainFrame.ZIndex = 10
 mainFrame.Parent = screenGui
+
+-- Run Cinematic Intro Animation Sequence
+task.spawn(function()
+    -- Sweep lens flare across screen
+    TweenService:Create(lensFlare, TweenInfo.new(1.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(1.2, 0, 0, 0)}):Play()
+    
+    -- Fade in logo with subtle zoom / scale simulation via text size / transparency
+    task.wait(0.3)
+    TweenService:Create(introLogo, TweenInfo.new(1.0, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+    TweenService:Create(introSub, TweenInfo.new(1.0, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {TextTransparency = 0.15}):Play()
+    
+    -- Cinematic letterboxing flash / shimmer
+    task.wait(1.5)
+    introSub.Text = "INITIALIZING PRODUCTION PIPELINE..."
+    
+    task.wait(1.2)
+    introSub.Text = "FEATURE LOADED."
+    
+    task.wait(0.8)
+    -- Epic Cinematic Fade Out
+    local fadeInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    TweenService:Create(introLogo, fadeInfo, {TextTransparency = 1}):Play()
+    TweenService:Create(introSub, fadeInfo, {TextTransparency = 1}):Play()
+    TweenService:Create(lensFlare, fadeInfo, {BackgroundTransparency = 1}):Play()
+    local bgTween = TweenService:Create(introScreen, fadeInfo, {BackgroundTransparency = 1})
+    bgTween:Play()
+    bgTween.Completed:Wait()
+    
+    introScreen:Destroy()
+    mainFrame.Visible = true
+end)
 
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 12)
@@ -239,7 +359,7 @@ titleLabel.Name = "Title"
 titleLabel.Size = UDim2.new(1, -70, 1, 0)
 titleLabel.Position = UDim2.new(0, 14, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "NEXO // HUB"
+titleLabel.Text = "nexo menu"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Font = Enum.Font.GothamBold
@@ -357,7 +477,8 @@ startButton.BackgroundColor3 = Color3.fromRGB(12, 35, 30)
 local antiMurderBtn = createModuleButton("AntiMurderButton", "Anti-Murder: OFF (Y)", 2)
 local murderKAButton = createModuleButton("MurderKAButton", "Murder KA: OFF (U)", 3)
 local sheriffKAButton = createModuleButton("SheriffKAButton", "Sheriff KA: OFF (I)", 4)
-local toggleButton   = createModuleButton("ToggleButton", "FREECAM: OFF (ALT)", 5)
+local autoGunButton  = createModuleButton("AutoGunButton", "Auto Gun Drop: OFF (O)", 5)
+local toggleButton   = createModuleButton("ToggleButton", "FREECAM: OFF (ALT)", 6)
 
 ---------------------------------------------------------
 -- SETTINGS MENU / CONSOLE TAB
@@ -405,7 +526,7 @@ local settingsTitle = Instance.new("TextLabel")
 settingsTitle.Size = UDim2.new(1, -40, 0, 40)
 settingsTitle.Position = UDim2.new(0, 14, 0, 0)
 settingsTitle.BackgroundTransparency = 1
-settingsTitle.Text = "NEXO // CONFIGURATION & CONSOLE"
+settingsTitle.Text = "nexo menu // CONFIGURATION & CONSOLE"
 settingsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 settingsTitle.Font = Enum.Font.GothamBold
 settingsTitle.TextSize = 14
@@ -448,6 +569,7 @@ local function updateButtonTexts()
     antiMurderBtn.Text = "Anti-Murder: " .. (isAntiMurderActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_ANTI_MURDER.Name) .. ")"
     murderKAButton.Text = "Murder KA: " .. (isMurderKillAuraActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_MURDER_KA.Name) .. ")"
     sheriffKAButton.Text = "Sheriff KA: " .. (isSheriffKillAuraActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_SHERIFF_KA.Name) .. ")"
+    autoGunButton.Text = "Auto Gun Drop: " .. (isAutoGunActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_AUTO_GUN.Name) .. ")"
     toggleButton.Text = "FREECAM: " .. (isFreecamActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_FREECAM.Name) .. ")"
 end
 
@@ -672,7 +794,7 @@ local function processCommand(text)
     if cmd == "toggle" then
         local moduleName = parts[2]
         if not moduleName then
-            logToConsole("Usage: toggle [antimurder/murderka/sheriffka/freecam/tploop]", Enum.MessageType.MessageWarning)
+            logToConsole("Usage: toggle [antimurder/murderka/sheriffka/autogundrop/freecam/tploop]", Enum.MessageType.MessageWarning)
             return
         end
 
@@ -685,6 +807,9 @@ local function processCommand(text)
         elseif moduleName == "sheriffka" or moduleName == "ska" then
             isSheriffKillAuraActive = not isSheriffKillAuraActive
             sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
+        elseif moduleName == "autogundrop" or moduleName == "agd" or moduleName == "autogun" then
+            isAutoGunActive = not isAutoGunActive
+            autoGunButton.BackgroundColor3 = isAutoGunActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
         elseif moduleName == "freecam" or moduleName == "fc" then
             if isFreecamActive then disableFreecam() else enableFreecam() end
         elseif moduleName == "tploop" or moduleName == "tp" then
@@ -729,6 +854,7 @@ local function processCommand(text)
             antiMurderBtn.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
             murderKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
             sheriffKAButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
+            autoGunButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
             toggleButton.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
             consoleScroll.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
             commandInput.BackgroundTransparency = CONFIG.ELEMENT_TRANSPARENCY
@@ -751,7 +877,7 @@ local function processCommand(text)
         settingsFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
         logToConsole("All settings reset to defaults via command.", Enum.MessageType.MessageInfo)
     elseif cmd == "help" then
-        logToConsole("Commands: toggle [antimurder/murderka/sheriffka/freecam/tploop]", Enum.MessageType.MessageInfo)
+        logToConsole("Commands: toggle [antimurder/murderka/sheriffka/autogundrop/freecam/tploop]", Enum.MessageType.MessageInfo)
         logToConsole("Commands: set [murderka/sheriffka/antimurder/height/speed/gui_trans/elem_trans] [val]", Enum.MessageType.MessageInfo)
         logToConsole("Commands: reset", Enum.MessageType.MessageInfo)
     else
@@ -866,7 +992,7 @@ nameLabel.Parent = specFrame
 local listFrame = Instance.new("Frame")
 listFrame.Name = "PlayerListFrame"
 listFrame.Size = UDim2.new(0, 230, 0, 250)
-listFrame.Position = UDim2.new(0.02, 0, 0.55, 0)
+listFrame.Position = UDim2.new(0.02, 0, 0.58, 0)
 listFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 listFrame.BackgroundTransparency = CONFIG.GUI_TRANSPARENCY
 listFrame.BorderSizePixel = 0
@@ -913,7 +1039,7 @@ listTitle.Name = "Header"
 listTitle.Size = UDim2.new(1, 0, 0, 32)
 listTitle.Position = UDim2.new(0, 0, 0, 0)
 listTitle.BackgroundTransparency = 1
-listTitle.Text = "NEXO // PLAYER ROLES"
+listTitle.Text = "Nexo menu // PLAYER ROLES"
 listTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 listTitle.Font = Enum.Font.GothamBold
 listTitle.TextSize = 13
@@ -944,6 +1070,7 @@ createKeybindInput("KEY_TP_LOOP", "TP Loop Key:")
 createKeybindInput("KEY_ANTI_MURDER", "Anti-Murder Key:")
 createKeybindInput("KEY_MURDER_KA", "Murder KA Key:")
 createKeybindInput("KEY_SHERIFF_KA", "Sheriff KA Key:")
+createKeybindInput("KEY_AUTO_GUN", "Auto Gun Key:")
 createKeybindInput("KEY_FREECAM", "Freecam Key:")
 
 createConfigInput("MURDER_KA_DISTANCE", "Murder KA Dist:", CONFIG.MURDER_KA_DISTANCE, function(v) CONFIG.MURDER_KA_DISTANCE = v end)
@@ -966,6 +1093,22 @@ end)
 ---------------------------------------------------------
 local function getPlayerRole(player)
     if not player then return "Innocent", COLOR_INNOCENT end
+
+    -- Check leaderstats / standard MM2 attributes first if present
+    local stats = player:FindFirstChild("leaderstats")
+    if stats then
+        for _, stat in ipairs(stats:GetChildren()) do
+            local statName = string.lower(stat.Name)
+            if statName == "role" or statName == "roundrole" then
+                local val = string.lower(tostring(stat.Value))
+                if string.find(val, "murder") then return "Murder", COLOR_MURDER
+                elseif string.find(val, "sheriff") then return "Sheriff", COLOR_SHERIFF
+                elseif string.find(val, "hero") then return "Sheriff", COLOR_SHERIFF
+                elseif string.find(val, "innocent") then return "Innocent", COLOR_INNOCENT end
+            end
+        end
+    end
+
     local hasGun, hasKnifeRole = false, false
 
     local function scanTools(container)
@@ -973,8 +1116,11 @@ local function getPlayerRole(player)
         for _, child in ipairs(container:GetChildren()) do
             if child:IsA("Tool") then
                 local name = string.lower(child.Name)
-                if name == "gun" then hasGun = true
-                elseif name == "knife" or name == "kinfe" then hasKnifeRole = true end
+                if name == "gun" or name == "revolver" or string.find(name, "sheriff") then 
+                    hasGun = true
+                elseif name == "knife" or name == "kinfe" or string.find(name, "murder") then 
+                    hasKnifeRole = true 
+                end
             end
         end
     end
@@ -1069,7 +1215,7 @@ local function getEquippedToolType(character)
     for _, child in ipairs(character:GetChildren()) do
         if child:IsA("Tool") then
             local name = string.lower(child.Name)
-            if name == "gun" then return "Gun"
+            if name == "gun" or name == "revolver" then return "Gun"
             elseif name == "knife" or name == "kinfe" then return "Knife" end
         end
     end
@@ -1178,12 +1324,8 @@ task.spawn(function()
                             if getEquippedToolType(myChar) ~= "Knife" then
                                 local backpack = localPlayer:FindFirstChild("Backpack")
                                 if backpack then
-                                    for _, tool in ipairs(backpack:GetChildren()) do
-                                        if tool:IsA("Tool") and (string.lower(tool.Name) == "knife" or string.lower(tool.Name) == "kinfe") then
-                                            tool.Parent = myChar
-                                            break
-                                        end
-                                    end
+                                    local tool = backpack:FindFirstChild("Knife") or backpack:FindFirstChild("Kinfe")
+                                    if tool then tool.Parent = myChar end
                                 end
                             end
                             local originalCFrame = myHrp.CFrame
@@ -1220,6 +1362,41 @@ task.spawn(function()
                                 clickOnPosition(targetHrp.Position)
                                 task.wait(0.1)
                             end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Auto Gun Drop / Pickup Loop (MM2 Dropped Gun Teleport / Touch)
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        if isAutoGunActive then
+            local myChar = localPlayer.Character
+            if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                local myHrp = myChar.HumanoidRootPart
+                
+                -- Check workspace for dropped gun models (Common MM2 name patterns for dropped gun: "Gun", "DroppedGun", "Revolver", or tool handles)
+                for _, obj in ipairs(workspace:GetChildren()) do
+                    local name = string.lower(obj.Name)
+                    if name == "gun" or name == "droppedgun" or name == "revolver" or string.find(name, "gun") or string.find(name, "droppe") then
+                        local targetPart = nil
+                        if obj:IsA("BasePart") then
+                            targetPart = obj
+                        elseif obj:IsA("Model") then
+                            targetPart = obj.PrimaryPart or obj:FindFirstChild("Handle") or obj:FindFirstChildWhichIsA("BasePart", true)
+                        end
+                        
+                        if targetPart then
+                            local originalCFrame = myHrp.CFrame
+                            myHrp.CFrame = targetPart.CFrame + Vector3.new(0, 1, 0)
+                            task.wait(0.1)
+                            myHrp.CFrame = originalCFrame
+                            task.wait(0.5)
+                            break
                         end
                     end
                 end
@@ -1484,6 +1661,12 @@ sheriffKAButton.MouseButton1Click:Connect(function()
     updateButtonTexts()
 end)
 
+autoGunButton.MouseButton1Click:Connect(function()
+    isAutoGunActive = not isAutoGunActive
+    autoGunButton.BackgroundColor3 = isAutoGunActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
+    updateButtonTexts()
+end)
+
 prevBtn.MouseButton1Click:Connect(function() if isFreecamActive then setSpectateTarget(spectateIndex - 1) end end)
 nextBtn.MouseButton1Click:Connect(function() if isFreecamActive then setSpectateTarget(spectateIndex + 1) end end)
 
@@ -1510,6 +1693,10 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
             isSheriffKillAuraActive = not isSheriffKillAuraActive
             sheriffKAButton.BackgroundColor3 = isSheriffKillAuraActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
             updateButtonTexts()
+        elseif input.KeyCode == CONFIG.KEY_AUTO_GUN then
+            isAutoGunActive = not isAutoGunActive
+            autoGunButton.BackgroundColor3 = isAutoGunActive and Color3.fromRGB(12, 35, 30) or Color3.fromRGB(18, 18, 25)
+            updateButtonTexts()
         elseif input.KeyCode == CONFIG.KEY_FREECAM then
             if isFreecamActive then disableFreecam() else enableFreecam() end
         end
@@ -1530,6 +1717,7 @@ closeButton.MouseButton1Click:Connect(function()
     isAntiMurderActive = false
     isMurderKillAuraActive = false
     isSheriffKillAuraActive = false
+    isAutoGunActive = false
     disableFreecam()
     for _, p in ipairs(Players:GetPlayers()) do
         if p.Character and p.Character:FindFirstChild("RoleHighlight") then p.Character.RoleHighlight:Destroy() end
