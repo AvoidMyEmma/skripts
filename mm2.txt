@@ -1,5 +1,5 @@
 -- LocalScript placed inside StarterPlayerScripts or executed via exploit
--- Nexo Hub Pro - Animated Edition with Dynamic Visuals & Fully Configurable Keybinds
+-- Nexo Hub Pro - Animated Edition with Dynamic Visuals & Fully Configurable Keybinds[cite: 1]
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -9,7 +9,7 @@ local ContextActionService = game:GetService("ContextActionService")
 local LogService = game:GetService("LogService")
 local TweenService = game:GetService("TweenService")
 
--- Safely get LocalPlayer and PlayerGui for both studio and exploit environments
+-- Safely get LocalPlayer and PlayerGui for both studio and exploit environments[cite: 1]
 local localPlayer = Players.LocalPlayer
 if not localPlayer then
     Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
@@ -19,7 +19,7 @@ end
 local camera = workspace.CurrentCamera
 
 ---------------------------------------------------------
--- CONFIGURATION SETTINGS (CONFIGURABLE VIA UI)
+-- CONFIGURATION SETTINGS (CONFIGURABLE VIA UI)[cite: 1]
 ---------------------------------------------------------
 local DEFAULT_CONFIG = {
     ATTACK_DURATION = 1.0,
@@ -27,25 +27,25 @@ local DEFAULT_CONFIG = {
     MOVE_SPEED = 50,
     LOOK_SENSITIVITY = 0.25,
     
-    -- Keybinds per module
+    -- Keybinds per module[cite: 1]
     KEY_TP_LOOP = Enum.KeyCode.T,
     KEY_ANTI_MURDER = Enum.KeyCode.Y,
     KEY_MURDER_KA = Enum.KeyCode.U,
     KEY_SHERIFF_KA = Enum.KeyCode.I,
     KEY_FREECAM = Enum.KeyCode.LeftAlt,
     
-    -- Configurable Distances & Stats
+    -- Configurable Distances & Stats[cite: 1]
     MURDER_KA_DISTANCE = 10,
     SHERIFF_KA_DISTANCE = 10,
     ANTI_MURDER_DISTANCE = 20,
     ANTI_MURDER_SKY_HEIGHT = 100,
     
-    -- GUI Transparency Settings (0 = Opaque, 1 = Fully Transparent)
+    -- GUI Transparency Settings (0 = Opaque, 1 = Fully Transparent)[cite: 1]
     GUI_TRANSPARENCY = 0.1,
     ELEMENT_TRANSPARENCY = 0.1,
 }
 
--- Active CONFIG table that updates during runtime
+-- Active CONFIG table that updates during runtime[cite: 1]
 local CONFIG = {}
 for k, v in pairs(DEFAULT_CONFIG) do
     CONFIG[k] = v
@@ -53,13 +53,13 @@ end
 
 local ACTION_FREEZE = "FreecamFreezeMovement"
 
--- Role Colors
+-- Role Colors[cite: 1]
 local COLOR_INNOCENT = Color3.fromRGB(50, 200, 50)  
 local COLOR_SHERIFF  = Color3.fromRGB(50, 120, 255) 
 local COLOR_MURDER   = Color3.fromRGB(230, 50, 50)  
 
 ---------------------------------------------------------
--- INTERNAL STATE
+-- INTERNAL STATE[cite: 1]
 ---------------------------------------------------------
 local isTeleportRunning = false
 local isAntiMurderActive = false
@@ -81,7 +81,7 @@ local isRightMouseDown = false
 local listeningForKeyConfig = nil
 
 ---------------------------------------------------------
--- MAIN GUI CREATION
+-- MAIN GUI CREATION[cite: 1]
 ---------------------------------------------------------
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
@@ -96,7 +96,7 @@ screenGui.DisplayOrder = 100
 screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
--- 1. Main Container Frame
+-- 1. Main Container Frame[cite: 1]
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 220, 0, 255)
@@ -127,7 +127,7 @@ mainStrokeGradient.Color = ColorSequence.new({
 })
 mainStrokeGradient.Parent = mainStroke
 
--- Animated Gradient Flow (Smooth shifting without size adjustments)
+-- Animated Gradient Flow (Smooth shifting without size adjustments)[cite: 1]
 task.spawn(function()
     local offset = 0
     while true do
@@ -143,7 +143,7 @@ task.spawn(function()
     end
 end)
 
--- Title Bar with Gradient Shift
+-- Title Bar with Gradient Shift[cite: 1]
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
 titleLabel.Size = UDim2.new(1, -70, 0, 30)
@@ -176,7 +176,7 @@ task.spawn(function()
     end
 end)
 
--- Settings Button
+-- Settings Button[cite: 1]
 local settingsButton = Instance.new("TextButton")
 settingsButton.Name = "SettingsButton"
 settingsButton.Size = UDim2.new(0, 25, 0, 25)
@@ -249,7 +249,7 @@ local function createModuleButton(name, posY, defaultText)
     return btn
 end
 
--- Module Buttons Stack
+-- Module Buttons Stack[cite: 1]
 local startButton = createModuleButton("StartButton", 35, "Start TP Loop (T)")
 startButton.BackgroundColor3 = Color3.fromRGB(20, 45, 35)
 
@@ -260,7 +260,7 @@ local toggleButton   = createModuleButton("ToggleButton", 183, "FREECAM: OFF (AL
 toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 
 ---------------------------------------------------------
--- SETTINGS MENU / DEVELOPER CONFIG TAB
+-- SETTINGS MENU / DEVELOPER CONFIG TAB[cite: 1]
 ---------------------------------------------------------
 local settingsFrame = Instance.new("Frame")
 settingsFrame.Name = "SettingsFrame"
@@ -324,7 +324,7 @@ settingsClose.TextSize = 14
 settingsClose.ZIndex = 21
 settingsClose.Parent = settingsFrame
 
--- Config Container (Left Side of Settings)
+-- Config Container (Left Side of Settings)[cite: 1]
 local configContainer = Instance.new("ScrollingFrame")
 configContainer.Size = UDim2.new(0.45, -5, 1, -125)
 configContainer.Position = UDim2.new(0, 10, 0, 40)
@@ -455,7 +455,7 @@ local function createKeybindInput(configKey, nameText)
     row.Parent = configContainer
 end
 
--- Reset Settings Button
+-- Reset Settings Button[cite: 1]
 local resetSettingsBtn = Instance.new("TextButton")
 resetSettingsBtn.Size = UDim2.new(0.45, -5, 0, 32)
 resetSettingsBtn.Position = UDim2.new(0, 10, 1, -75)
@@ -487,7 +487,7 @@ resetSettingsBtn.MouseLeave:Connect(function()
     TweenService:Create(resetStroke, TweenInfo.new(0.2), {Transparency = 0.6}):Play()
 end)
 
--- Console Scrolling Frame for Logs
+-- Console Scrolling Frame for Logs[cite: 1]
 local consoleScroll = Instance.new("ScrollingFrame")
 consoleScroll.Size = UDim2.new(0.53, -5, 1, -85)
 consoleScroll.Position = UDim2.new(0.47, 0, 0, 40)
@@ -559,12 +559,12 @@ cmdCorner.CornerRadius = UDim.new(0, 6)
 cmdCorner.Parent = commandInput
 
 ---------------------------------------------------------
--- FORWARD DECLARATIONS
+-- FORWARD DECLARATIONS[cite: 1]
 ---------------------------------------------------------
 local startTeleportSequence, disableFreecam, enableFreecam
 
 ---------------------------------------------------------
--- COMMAND PROCESSOR
+-- COMMAND PROCESSOR[cite: 1]
 ---------------------------------------------------------
 local function processCommand(text)
     text = string.lower(string.match(text, "^%s*(.-)%s*$"))
@@ -692,7 +692,7 @@ settingsButton.MouseButton1Click:Connect(function()
 end)
 settingsClose.MouseButton1Click:Connect(function() settingsFrame.Visible = false end)
 
--- Reset Button Click Event
+-- Reset Button Click Event[cite: 1]
 resetSettingsBtn.MouseButton1Click:Connect(function()
     for k, v in pairs(DEFAULT_CONFIG) do
         CONFIG[k] = v
@@ -717,7 +717,7 @@ resetSettingsBtn.MouseButton1Click:Connect(function()
     logToConsole("Settings successfully reset to factory defaults.", Enum.MessageType.MessageInfo)
 end)
 
--- Spectate Bar
+-- Spectate Bar[cite: 1]
 local specFrame = Instance.new("Frame")
 specFrame.Size = UDim2.new(0, 300, 0, 45)
 specFrame.Position = UDim2.new(0.5, -150, 0.88, 0)
@@ -797,7 +797,7 @@ nameLabel.ZIndex = 11
 nameLabel.Parent = specFrame
 
 ---------------------------------------------------------
--- PLAYER LIST HEADER FRAME (ROLE ESP LIST)
+-- PLAYER LIST HEADER FRAME (ROLE ESP LIST)[cite: 1]
 ---------------------------------------------------------
 local listFrame = Instance.new("Frame")
 listFrame.Name = "PlayerListFrame"
@@ -892,7 +892,7 @@ listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     scrollContainer.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
 end)
 
--- Fill Settings Config Fields & Keybind Rebinders
+-- Fill Settings Config Fields & Keybind Rebinders[cite: 1]
 createKeybindInput("KEY_TP_LOOP", "TP Loop Key:")
 createKeybindInput("KEY_ANTI_MURDER", "Anti-Murder Key:")
 createKeybindInput("KEY_MURDER_KA", "Murder KA Key:")
@@ -922,7 +922,7 @@ createConfigInput("ELEMENT_TRANSPARENCY", "Elem Transparency:", CONFIG.ELEMENT_T
 end)
 
 ---------------------------------------------------------
--- HELPER FUNCTIONS & ROLE SCANNER
+-- HELPER FUNCTIONS & ROLE SCANNER[cite: 1]
 ---------------------------------------------------------
 local function getPlayerRole(player)
     if not player then return "Innocent", COLOR_INNOCENT end
@@ -1074,25 +1074,8 @@ local function clickOnPosition(worldPos)
 end
 
 ---------------------------------------------------------
--- EXISTING GAMEPLAY LOOPS
+-- EXISTING GAMEPLAY LOOPS[cite: 1]
 ---------------------------------------------------------
-task.spawn(function()
-    while true do
-        task.wait(0.5)
-        if isTeleportRunning then
-            local character = localPlayer.Character
-            if character then
-                local humanoid = character:FindFirstChildOfClass("Humanoid")
-                local hrp = character:FindFirstChild("HumanoidRootPart")
-                if humanoid and hrp then
-                    local randomOffset = Vector3.new(math.random(-30, 30), 0, math.random(-30, 30))
-                    humanoid:MoveTo(hrp.Position + randomOffset)
-                end
-            end
-        end
-    end
-end)
-
 local function isVisibleToPlayer(targetPart)
     local char = localPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
@@ -1112,7 +1095,7 @@ local function isVisibleToPlayer(targetPart)
     return rayResult == nil
 end
 
--- Anti-Murder Loop
+-- Anti-Murder Loop[cite: 1]
 task.spawn(function()
     while true do
         task.wait(0.1)
@@ -1140,7 +1123,7 @@ task.spawn(function()
     end
 end)
 
--- Murderer Kill Aura
+-- Murderer Kill Aura[cite: 1]
 task.spawn(function()
     while true do
         task.wait(0.05)
@@ -1181,7 +1164,7 @@ task.spawn(function()
     end
 end)
 
--- Sheriff Kill Aura
+-- Sheriff Kill Aura[cite: 1]
 task.spawn(function()
     while true do
         task.wait(0.05)
@@ -1216,7 +1199,18 @@ function startTeleportSequence()
     startButton.BackgroundColor3 = Color3.fromRGB(30, 45, 40)
 
     if toolType == "None" then
-        myHRP.CFrame = myHRP.CFrame * CFrame.new(0, 100, 0)
+        local currentPos = myHRP.Position
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+        raycastParams.FilterDescendantsInstances = {myCharacter}
+        raycastParams.IgnoreWater = true
+        
+        local rayResult = workspace:Raycast(Vector3.new(currentPos.X, 1000, currentPos.Z), Vector3.new(0, -1500, 0), raycastParams)
+        if rayResult then
+            myHRP.CFrame = CFrame.new(rayResult.Position + Vector3.new(0, 3, 0))
+        else
+            myHRP.CFrame = myHRP.CFrame * CFrame.new(0, 100, 0)
+        end
         task.wait(5)
     else
         local visited = {}
@@ -1251,7 +1245,7 @@ function startTeleportSequence()
 end
 
 ---------------------------------------------------------
--- FREECAM LOGIC
+-- FREECAM LOGIC[cite: 1]
 ---------------------------------------------------------
 local function updateButtonUI()
     if isFreecamActive then
@@ -1426,7 +1420,7 @@ function enableFreecam()
 end
 
 ---------------------------------------------------------
--- UI CONNECTIONS & EVENTS
+-- UI CONNECTIONS & EVENTS[cite: 1]
 ---------------------------------------------------------
 startButton.MouseButton1Click:Connect(function()
     if not isTeleportRunning then task.spawn(startTeleportSequence) else isTeleportRunning = false end
