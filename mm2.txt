@@ -477,7 +477,7 @@ startButton.BackgroundColor3 = Color3.fromRGB(12, 35, 30)
 local antiMurderBtn = createModuleButton("AntiMurderButton", "Anti-Murder: OFF (Y)", 2)
 local murderKAButton = createModuleButton("MurderKAButton", "Murder KA: OFF (U)", 3)
 local sheriffKAButton = createModuleButton("SheriffKAButton", "Sheriff KA: OFF (I)", 4)
-local autoGunButton  = createModuleButton("AutoGunButton", "Auto Gun Drop: OFF (O)", 5)
+local autoGunButton  = createModuleButton("AutoGunButton", "Auto Gun Drop [BETA]: OFF (O)", 5)
 local toggleButton   = createModuleButton("ToggleButton", "FREECAM: OFF (ALT)", 6)
 
 ---------------------------------------------------------
@@ -569,7 +569,7 @@ local function updateButtonTexts()
     antiMurderBtn.Text = "Anti-Murder: " .. (isAntiMurderActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_ANTI_MURDER.Name) .. ")"
     murderKAButton.Text = "Murder KA: " .. (isMurderKillAuraActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_MURDER_KA.Name) .. ")"
     sheriffKAButton.Text = "Sheriff KA: " .. (isSheriffKillAuraActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_SHERIFF_KA.Name) .. ")"
-    autoGunButton.Text = "Auto Gun Drop: " .. (isAutoGunActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_AUTO_GUN.Name) .. ")"
+    autoGunButton.Text = "Auto Gun Drop [BETA]: " .. (isAutoGunActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_AUTO_GUN.Name) .. ")"
     toggleButton.Text = "FREECAM: " .. (isFreecamActive and "ON" or "OFF") .. " (" .. string.upper(CONFIG.KEY_FREECAM.Name) .. ")"
 end
 
