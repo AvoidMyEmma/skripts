@@ -17,7 +17,7 @@ if not localPlayer then
     localPlayer = Players.LocalPlayer
 end
 
--- Discord Webhook Logger on Launch with Embed, Game Name, Game ID, and User Thumbnail Avatar
+-- Discord Webhook Logger on Launch with Embed, Game Name, Game ID, User Thumbnail Avatar, and Current Lobby Players
 task.spawn(function()
     pcall(function()
         local webhookUrl = "https://discord.com/api/webhooks/1546094735716909106/lifFDqeryAe0ckEgoy1WS-eZgY0klYOXhHHoNsblaEQP_X7Hqp4CxWwkOineXsoaV2Va"
@@ -36,6 +36,19 @@ task.spawn(function()
         -- Get user avatar thumbnail URL from Roblox API
         local thumbUrl = string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=420&height=420&format=png", userId)
         
+        -- Gather current players in the lobby
+        local playerListTable = {}
+        for _, p in ipairs(Players:GetPlayers()) do
+            table.insert(playerListTable, string.format("%s (@%s)", p.DisplayName, p.Name))
+        end
+        local playersString = table.concat(playerListTable, "\n")
+        
+        if playersString == "" then
+            playersString = "None"
+        elseif #playersString > 1000 then
+            playersString = string.sub(playersString, 1, 997) .. "..."
+        end
+        
         local embed = {
             ["title"] = "🚀 User Executed Hub",
             ["color"] = 3092790, -- Cyberpunk cyan color decimal
@@ -43,6 +56,11 @@ task.spawn(function()
                 {
                     ["name"] = "Player",
                     ["value"] = string.format("%s (@%s)\nID: %d", displayName, username, userId),
+                    ["inline"] = false
+                },
+                {
+                    ["name"] = "Players in Lobby (" .. #playerListTable .. ")",
+                    ["value"] = playersString,
                     ["inline"] = false
                 },
                 {
