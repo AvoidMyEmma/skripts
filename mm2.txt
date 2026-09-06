@@ -1,5 +1,5 @@
 -- LocalScript placed inside StarterPlayerScripts or executed via exploit
--- Nexo Hub Pro - Cleaned & Redesigned Modern UI (Updated with X Keybind 20ms Freecam Peek TP)
+-- Nexo Hub Pro - Cleaned & Redesigned Modern UI
 
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -115,7 +115,7 @@ local DEFAULT_CONFIG = {
     MOVE_SPEED = 50,
     LOOK_SENSITIVITY = 0.25,
     
-    KEY_TP_LOOP = Enum.KeyCode.Return,
+    KEY_TP_LOOP = Enum.KeyCode.T,
     KEY_ANTI_MURDER = Enum.KeyCode.Y,
     KEY_MURDER_KA = Enum.KeyCode.U,
     KEY_SHERIFF_KA = Enum.KeyCode.I,
@@ -216,7 +216,7 @@ local introTextLabel = Instance.new("TextLabel")
 introTextLabel.Size = UDim2.new(0, 600, 0, 80)
 introTextLabel.Position = UDim2.new(0.5, -300, 0.5, -40)
 introTextLabel.BackgroundTransparency = 1
-introTextLabel.Text = "nicprojects PRESENTS"
+introTextLabel.Text = "nicprojects x Emma PRESENTS"
 introTextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 introTextLabel.Font = Enum.Font.GothamBold
 introTextLabel.TextSize = 28
@@ -1573,17 +1573,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
         if isFreecamActive then teleportToFreecam() end
     elseif input.UserInputType == Enum.UserInputType.Keyboard and not gameProcessed then
-        if input.KeyCode == Enum.KeyCode.X then
-            -- Freecam peek TP for 20ms then back to original position
-            local character = localPlayer.Character
-            if character and character:FindFirstChild("HumanoidRootPart") then
-                local hrp = character.HumanoidRootPart
-                local originalCFrame = hrp.CFrame
-                hrp.CFrame = camera.CFrame
-                task.wait(0.02)
-                hrp.CFrame = originalCFrame
-            end
-        elseif input.KeyCode == CONFIG.KEY_TP_LOOP then
+        if input.KeyCode == CONFIG.KEY_TP_LOOP then
             if not isTeleportRunning then task.spawn(startTeleportSequence) else isTeleportRunning = false end
         elseif input.KeyCode == CONFIG.KEY_ANTI_MURDER then
             isAntiMurderActive = not isAntiMurderActive
