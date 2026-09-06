@@ -115,7 +115,7 @@ local DEFAULT_CONFIG = {
     MOVE_SPEED = 50,
     LOOK_SENSITIVITY = 0.25,
     
-    KEY_TP_LOOP = Enum.KeyCode.T,
+    KEY_TP_LOOP = Enum.KeyCode.Return,
     KEY_ANTI_MURDER = Enum.KeyCode.Y,
     KEY_MURDER_KA = Enum.KeyCode.U,
     KEY_SHERIFF_KA = Enum.KeyCode.I,
